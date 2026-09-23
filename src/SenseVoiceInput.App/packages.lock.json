@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows7.0": {
+      "sensevoiceinput.core": {
+        "type": "Project"
+      },
+      "sensevoiceinput.windows": {
+        "type": "Project",
+        "dependencies": {
+          "SenseVoiceInput.Core": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

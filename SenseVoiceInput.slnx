@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SenseVoiceInput.App/SenseVoiceInput.App.csproj" />
+    <Project Path="src/SenseVoiceInput.Core/SenseVoiceInput.Core.csproj" />
+    <Project Path="src/SenseVoiceInput.Windows/SenseVoiceInput.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SenseVoiceInput.Core.Tests/SenseVoiceInput.Core.Tests.csproj" />
+  </Folder>
+</Solution>
