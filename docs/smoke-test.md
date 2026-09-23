@@ -6,12 +6,12 @@
 
 - `dotnet restore --locked-mode`: 成功。
 - `dotnet build -c Release --no-restore`: 成功、警告 0 / エラー 0。
-- Core: **37 件成功**。状態、重複・競合、エラー復帰、終了、PCM、認識結果、Clipboard 手順、設定、ログ。
+- Core: **45 件成功**。状態、重複・競合、エラー復帰、終了、PCM、認識結果、Clipboard 手順、設定、ログ、JIS/US の Caps Lock 判定。
 - Windows 境界: **3 件成功**。モデル欠落、事前キャンセル、短い音声。
 - 実モデル: **1 件成功**。公式 `test_wavs/ja.wav` を CPU で認識、日本語文字と `ja` メタデータ、タグ除去を検証。Fake recognizer は使用していない。
 - 実マイク: **1 件成功**。WASAPI で 500 ms の PCM 取得、停止、100 ms の再録音・停止。有限値・非空 buffer を確認し消去。発話の正確さを検証するテストではない。
 
-合計 **42 ケース**。通常の `dotnet test` は 40 件成功 + opt-in 2 件スキップ。実モデル指定の Release 検証は 41 件成功 + 実マイク 1 件スキップ（ユーザー操作を妨げないため）。マイクの 1 件は別実行で成功済み。
+合計 **50 ケース**。JIS 修正後の `dotnet test --no-restore` は **48 件成功・2 件スキップ・失敗 0**。実モデルを指定した `dotnet test -c Release --no-restore` は **49 件成功・実マイク 1 件スキップ・失敗 0**（ユーザー操作を妨げないため）。実マイクの 1 件は別実行で成功済み。
 
 ```powershell
 $env:SENSEVOICE_TEST_MODEL = (Resolve-Path '.\models\sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17').Path
@@ -29,7 +29,7 @@ dotnet test -c Release
 | 日本語推論 | 上記実モデル integration test 成功 |
 | キーから入力の処理 | ユーザーの試行中、ログに複数回の AudioCaptureStarted→Stopped→Recognition→TextInjectionCompleted を確認。ただしログだけで入力先と内容の正しさを判断しない |
 | 修飾キー中の貼り付け拒否 | 実ログで Win32.Paste からのエラー通知を確認 |
-| Notepad の目視結果 | ユーザー確認中。確定した入力文字列と Clipboard 復元は未確認 |
+| Notepad の目視結果 | 初版はユーザー実機で Caps Lock 単独操作が失敗。Shift+CapsLock 等を挟むと入力できたとの報告。JIS の英数キー (scan 0x3A) 対応へ修正し、修正版の再確認を依頼中。Clipboard 復元も未確認 |
 | Close-to-tray / Exit | 実装済み、実 UI での最終確認は未完了 |
 | VS Code / Terminal / browser textarea | 未実施 |
 

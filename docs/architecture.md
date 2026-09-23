@@ -15,6 +15,8 @@ WH_KEYBOARD_LL -> dispatcher -> PushToTalkCoordinator
 
 Coordinator は SemaphoreSlim で処理を直列化する。録音開始待ちの KeyUp は開始完了を待つ。録音中の追加 KeyDown、認識・入力中の KeyDown / KeyUp は無視する。キーフックの callback はイベントを dispatcher にキューし、Windows に直ちに返す。押下リピートを KeyGate で除外し、Caps Lock の down/up を抑止する。
 
+Caps Lock は非 extended の物理 scan code `0x3A` で照合する。日本語 JIS キーボードの英数キーでは `VK_CAPITAL (0x14)` ではなく `VK_OEM_ATTN (0xF0)` が来る場合があり、仮想キーだけの判定では押下を取り逃す。物理コードを持たない仮想 Caps イベント (`scan=0, VK=0x14`) も受け付ける。別の設定キーへの拡張では仮想キー照合を使う。[Microsoft PowerToys の日本語 IME / Caps の技術ノート](https://github.com/microsoft/PowerToys/blob/main/doc/devdocs/modules/keyboardmanager/keyboardmanager.md)。
+
 WASAPI は既定の Communications 入力または明示したデバイスで Float32 を取得し、チャンネルを平均して mono 化。元のサンプルレートを recognizer に渡し、sherpa-onnx がモデル向け 16 kHz へのリサンプリング、fbank 等の前処理、SenseVoice 推論、CTC decode を行う。最大 60 秒で録音を止める。VAD を追加する場合は capture と recognition の間に segmenter を挿入できる。
 
 認識モデルは初回発話でロードし再利用。推論は Task.Run 内で直列実行。上流 C# 設定構造体を利用し、C API で生成された handle の NULL を必ず確認する（上流ラッパーの null handle 利用を避ける）。stream / JSON / recognizer の所有権を finally / Dispose で解放。モデルパス変更で再初期化する。`RecognitionBackend` の解決は UI と分離し、MVP の非 CPU 値は拒否。

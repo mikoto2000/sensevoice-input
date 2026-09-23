@@ -13,6 +13,7 @@ public interface IGlobalKeyboardService : IDisposable
 public sealed class GlobalKeyboardService(Dispatcher dispatcher, int virtualKey = 0x14) : IGlobalKeyboardService
 {
     private readonly PushToTalkKeyGate gate = new();
+    private readonly PushToTalkKeyBinding binding = new(virtualKey);
     private HookProc? callback;
     private nint hook;
     public event Action<bool>? KeyChanged;
@@ -25,7 +26,9 @@ public sealed class GlobalKeyboardService(Dispatcher dispatcher, int virtualKey 
     }
     private nint OnHook(int code, nint message, nint data)
     {
-        if (code >= 0 && Marshal.ReadInt32(data) == virtualKey)
+        // KBDLLHOOKSTRUCT: vkCode, scanCode, flags. JIS Eisu is often VK_OEM_ATTN (0xF0).
+        // Match the physical Caps position before IME translation, on both down and up.
+        if (code >= 0 && binding.Matches(Marshal.ReadInt32(data), Marshal.ReadInt32(data, 4), (Marshal.ReadInt32(data, 8) & 1) != 0))
         {
             var kind = (int)message;
             if (kind is 0x100 or 0x104 or 0x101 or 0x105)

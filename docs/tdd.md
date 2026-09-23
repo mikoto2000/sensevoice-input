@@ -14,6 +14,7 @@
 | キー・設定 | KeyGate / SettingsStore 未定義 | repeat 抑止、JSON roundtrip / 破損 / 範囲検証、27 件成功 |
 | ログ | DiagnosticLog 未定義 | 例外メッセージから発話を漏らさない、28 件成功 |
 | 言語タグの修正 | `<|en|>` が `ja` になる assertion failure を再現 | 言語を unwrap して保持、37 件成功（追加回帰テストを含む） |
+| JIS Caps Lock の修正 | ユーザー実機で単独押下が反応しない。キー照合の新仕様 8 件が未実装で失敗 | scan 0x3A により英数/Caps を同一視、仮想キーの異なる up も処理。Core 45 件成功 |
 
 Windows アダプターは境界の Fake でアプリケーション仕様を先にテストした後に実装。OS API 自体をモックの細部に合わせた単体テストにせず、実モデル・実マイクの opt-in integration test と UI smoke test に分けた。
 
