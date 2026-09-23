@@ -1,5 +1,11 @@
 # Verification record
 
+## 最新: 任意トリガー版
+
+全86件（Core71 + Windows15）成功、skip0。実モデル・実マイクを含むReleaseテストとpublish成功。新設定UIの移行警告・保存をComputer Useで確認。物理キー取得から実発話入力は未確認。VAD本体は今回の対象外で自動録音は動作しない。詳細は [input-triggers.md](input-triggers.md)。
+
+以下は旧版の検証履歴（Caps固有仕様は廃止）。
+
 実施日: 2026-09-24 (JST)。Windows 11 x64 build 26200、.NET SDK 10.0.401 / runtime 10.0.12。
 
 ## Automated verification

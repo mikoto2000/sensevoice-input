@@ -25,3 +25,6 @@ Green 後の整理では状態表、PCM 変換、認識設定、Clipboard 手順
 Clipboard の退避失敗後、Unicode fallback の2件を Red（専用例外未定義）→Green で実装。その後ユーザーの設計変更により直接入力を標準にした。直接入力時の Clipboard 非アクセス、焦点変更・キャンセル、保存後の方式変更、Clipboard 方式の明示維持、旧設定のデフォルト・不正値拒否のテストを追加し、未定義型による Red を確認後に実装。Core 62 件 Green。fallback は削除した。
 
 詳細な実行結果は [smoke-test.md](smoke-test.md) を参照。
+
+## 任意トリガーへの設計変更
+旧キー固有テスト16件は仕様廃止により置換。新規35件のRed/Greenと回帰検証は [input-triggers.md](input-triggers.md) に記録。全86件成功。

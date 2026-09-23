@@ -17,23 +17,23 @@ public class CoordinatorTests
         Assert.Equal(1, audio.Starts);
         Assert.Equal(InputState.Recording, sut.State);
     }
-    [Fact] public async Task JisHoldRepeatDoesNotStopOrRecognizeUntilFinalRelease()
+    [Fact] public async Task TriggerRepeatDoesNotStopOrRecognizeUntilRelease()
     {
-        await using var sut = Create(); var gate = new PushToTalkHoldGate();
+        await using var sut = Create(); var matcher = new InputTriggerMatcher(InputTrigger.Single(KeyCode.F12));
         async Task Feed(bool down, long time)
         {
-            foreach (bool transition in gate.Update(down, time))
-                if (transition) await sut.KeyDownAsync(); else await sut.KeyUpAsync();
+            var transition = matcher.OnKeyEvent(new(KeyCode.F12, down ? KeyAction.Down : KeyAction.Up, time));
+            if (transition == TriggerTransition.Activated) await sut.KeyDownAsync();
+            if (transition == TriggerTransition.Released) await sut.KeyUpAsync();
         }
         await Feed(true, 0);
         for (long time = 510; time < 3000; time += 31)
         {
-            await Feed(false, time); await Feed(true, time + 1);
+            await Feed(true, time);
             Assert.Equal(InputState.Recording, sut.State);
         }
         Assert.Equal(1, audio.Starts); Assert.Equal(0, audio.Stops); Assert.Null(recognizer.Received);
         await Feed(false, 3100);
-        if (gate.FlushRelease(3150)) await sut.KeyUpAsync();
         Assert.Equal(1, audio.Stops); Assert.Equal(InputState.Idle, sut.State);
     }
 

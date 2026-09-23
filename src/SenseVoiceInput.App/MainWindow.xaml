@@ -11,18 +11,35 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="30">
             <TextBlock Text="SenseVoice Input" FontSize="28" FontWeight="SemiBold" Foreground="#172C44" />
-            <TextBlock Text="Caps Lock を押して話し、離すと入力します。" Foreground="#42556D" Margin="0,4,0,24" />
+            <TextBlock Text="設定したトリガーを押して話し、離すと入力します。" Foreground="#42556D" Margin="0,4,0,24" />
             <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="STATUS" FontSize="11" Foreground="#52657D" />
                     <TextBlock Text="{Binding Status}" FontSize="19" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding AutoStatus}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Error}" Foreground="#AD2424" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
             <StackPanel IsEnabled="{Binding CanEdit}">
                 <TextBlock Text="マイク" />
                 <ComboBox ItemsSource="{Binding Microphones}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding MicrophoneDeviceId}" AutomationProperties.Name="Microphone" />
-                <TextBlock Text="Push-to-Talk : Caps Lock（録音専用）" />
+                <CheckBox Content="Push-to-Talk を有効にする" IsChecked="{Binding PttEnabled}" Margin="0,8" />
+                <ComboBox ItemsSource="{Binding PttTypes}" SelectedItem="{Binding PttType}" AutomationProperties.Name="PTT trigger type" />
+                <TextBlock Text="{Binding PttTriggerDisplay}" />
+                <Button Content="PTT のキーを設定" Command="{Binding CapturePttCommand}" Padding="8" />
+                <CheckBox Content="自動音声入力の切替を有効にする" IsChecked="{Binding AutoEnabled}" Margin="0,16,0,8" />
+                <ComboBox ItemsSource="{Binding AutoTypes}" SelectedItem="{Binding AutoType}" AutomationProperties.Name="Auto trigger type" />
+                <TextBlock Text="{Binding AutoTriggerDisplay}" />
+                <Button Content="自動入力の切替キーを設定" Command="{Binding CaptureAutoCommand}" Padding="8" />
+                <TextBlock Text="{Binding CaptureHint}" TextWrapping="Wrap" Foreground="#183E62" Margin="0,8" />
+                <TextBlock Text="JIS英数のように解放通知が不確実なキーには非対応です。EscとWindowsキーは予約されています。2回押しキーは通常のキー操作も通過します。" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Text="2回押し間隔（100～1000 ms）" />
+                <TextBox Text="{Binding DoubleTapInterval, UpdateSourceTrigger=PropertyChanged}" />
+                <CheckBox Content="テキスト入力欄のみ" IsChecked="{Binding OnlyTextInput}" Margin="0,4" />
+                <CheckBox Content="無音で自動確定" IsChecked="{Binding VadEnabled}" Margin="0,4" />
+                <TextBlock Text="無音判定（200～5000 ms）" />
+                <TextBox Text="{Binding SilenceTimeout, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Text="自動入力は状態管理まで実装済みです。VAD未接続のため、自動録音・自動認識はまだ動作しません。" TextWrapping="Wrap" Foreground="#8A5300" />
                 <TextBlock Text="認識バックエンド" Margin="0,12,0,6" />
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
                 <TextBlock Text="SenseVoiceSmall モデルフォルダー" />
