@@ -6,4 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\scripts\whisper-model-manifest.json" LogicalName="SenseVoiceInput.Core.whisper-model-manifest.json" />
+  </ItemGroup>
 </Project>

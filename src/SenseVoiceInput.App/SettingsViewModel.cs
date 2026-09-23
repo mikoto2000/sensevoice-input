@@ -19,7 +19,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private TextInputMode textInputMode;
     public TextInputMode TextInputMode { get => textInputMode; set { textInputMode = value; Notify(); Notify(nameof(UsesClipboard)); } }
     public bool UsesClipboard => TextInputMode == TextInputMode.Clipboard;
-    public string ModelDirectory { get; set; }
+    private string modelDirectory = "";
+    public string ModelDirectory { get => modelDirectory; set { modelDirectory = value; Notify(); } }
+    private string downloadStatus = "";
+    private bool downloading;
+    private double downloadPercent;
+    private bool downloadIndeterminate;
+    public string DownloadStatus { get => downloadStatus; set { downloadStatus = value; Notify(); } }
+    public bool Downloading { get => downloading; set { downloading = value; Notify(); } }
+    public double DownloadPercent { get => downloadPercent; set { downloadPercent = value; Notify(); } }
+    public bool DownloadIndeterminate { get => downloadIndeterminate; set { downloadIndeterminate = value; Notify(); } }
+    public ICommand RetryDownloadCommand { get; }
+    public ICommand CancelDownloadCommand { get; }
+    public event Action? RetryDownloadRequested;
+    public event Action? CancelDownloadRequested;
     public string PasteRestoreDelay { get; set; }
     private string status = "Ready", error = "";
     private bool canEdit = true;
@@ -32,7 +45,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool OnlyTextInput { get; set; }
     public bool VadEnabled { get; set; }
     public string SilenceTimeout { get; set; }
-    public string VadModelPath { get; set; }
+    private string vadModelPath = "";
+    public string VadModelPath { get => vadModelPath; set { vadModelPath = value; Notify(); } }
     public string DoubleTapInterval { get; set; } = "350";
     public TriggerType[] PttTypes { get; } = [TriggerType.SINGLE_KEY, TriggerType.KEY_COMBINATION];
     public TriggerType[] AutoTypes { get; } = Enum.GetValues<TriggerType>();
@@ -56,6 +70,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     }
     public SettingsViewModel(AppSettings settings, Action<AppSettings> save, Action<Exception> report)
     {
+        RetryDownloadCommand = new ActionCommand(() => RetryDownloadRequested?.Invoke());
+        CancelDownloadCommand = new ActionCommand(() => CancelDownloadRequested?.Invoke());
         Engine = settings.Engine; MicrophoneDeviceId = settings.MicrophoneDeviceId; Backend = settings.Backend;
         TextInputMode = settings.TextInputMode;
         PttEnabled = settings.PushToTalk.Enabled; AutoEnabled = settings.AutoVoiceInput.Enabled;

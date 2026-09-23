@@ -35,7 +35,7 @@ public sealed record AppSettings
     public RecognitionEngine Engine { get; init; } = RecognitionEngine.WhisperOnnx;
     public string Language { get; init; } = "ja";
     public RecognitionBackend Backend { get; init; } = RecognitionBackend.CUDA;
-    public string ModelDirectory { get; init; } = Path.Combine(AppContext.BaseDirectory, "models", "whisper-large-v3-turbo");
+    public string ModelDirectory { get; init; } = ModelPaths.Whisper;
     public int PasteRestoreDelayMs { get; init; } = 1500;
     public TextInputMode TextInputMode { get; init; } = TextInputMode.Unicode;
     public void Validate()

@@ -7,7 +7,9 @@ $localCuda = Join-Path $repo 'artifacts\cuda-runtime'
 $originalPath = $env:PATH
 try {
     if (Test-Path -LiteralPath $localCuda) { $env:PATH = $localCuda + ';' + $env:PATH }
-    $arguments = @('run', '--project', (Join-Path $repo 'src\SenseVoiceInput.App'), '--', '--model-dir', (Join-Path $repo ('models\' + $modelName)), '--engine', $Engine, '--backend', $Backend)
+    $arguments = @('run', '--project', (Join-Path $repo 'src\SenseVoiceInput.App'), '--', '--engine', $Engine, '--backend', $Backend)
+    $localModel = Join-Path $repo ('models\' + $modelName)
+    if (Test-Path -LiteralPath $localModel) { $arguments += @('--model-dir', $localModel) }
     if ($Settings) { $arguments += '--settings' }
     & dotnet @arguments
     $result = $LASTEXITCODE

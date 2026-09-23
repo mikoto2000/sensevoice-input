@@ -8,13 +8,16 @@ Windows 11 x64 向けのローカル音声入力アプリ。標準エンジン�
 
 ```powershell
 dotnet restore --locked-mode
-.\scripts\download-whisper-model.ps1
 .\scripts\download-cuda-runtime.ps1
 dotnet build -c Release
 .\scripts\run.ps1 -Settings
 ```
 
-Whisper のモデル取得スクリプトは、約1.62GBの FP16 ONNX と設定・Tokenizerを固定リビジョンから取得し、全ファイルの SHA256 を照合します。Silero VAD も一緒に取得します（不要なら `-SkipVad`）。アプリ自体は自動ダウンロードしません。
+初回起動時、モデルが未配置ならアプリが自動ダウンロードします。保存先は `%LOCALAPPDATA%\sensevoice-input\models`（通常は `%USERPROFILE%\AppData\Local\sensevoice-input\models`）です。Whisper は約1.62GBの FP16 ONNX と設定・Tokenizerを固定リビジョンから取得し、SHA256 を照合します。Silero VAD も取得し、SenseVoice 選択時は既存スクリプトと同じ SHA256 のアーカイブから必要ファイルを展開します。管理者権限は不要です。
+
+設定画面でファイルごとの進捗を確認・中止・再試行できます。準備完了まで音声入力を停止し、失敗時は理由を表示します。途中のファイルは削除し、再試行では検証済みの完了ファイルを再利用します（ファイル途中からの再開には非対応）。既存の指定フォルダーにモデルが揃っていればそのまま利用します。不足時は上記保存先へ取得し、成功後に設定のモデルパスを更新します。設定保存でエンジンを変更した場合も自動確認します。
+
+手動で事前配置する場合は `scripts/download-whisper-model.ps1` も利用できます。CUDA DLL のセットアップは従来どおり別途必要です。
 
 モデル: [onnx-community/whisper-large-v3-turbo](https://huggingface.co/onnx-community/whisper-large-v3-turbo/tree/360ebcde2559d60bb474678be3c1de9ef347d01a)。元モデルのライセンスは[MIT](https://huggingface.co/openai/whisper-large-v3-turbo)。ONNX配布READMEは元モデルを参照しています。ファイル一覧とハッシュは [manifest](scripts/whisper-model-manifest.json)、詳細な仕様・比較結果は [Whisper 実装報告](docs/whisper-onnx.md) を参照してください。
 
@@ -54,9 +57,9 @@ models/silero_vad.onnx
 }
 ```
 
-設定画面でエンジン・モデルフォルダー・Execution Providerを選択して保存します。日本語 / transcribe は固定です。Whisper は CUDA/CPU、SenseVoice は CPU/Auto に対応します。別エンジンへ切り替える際は対応するモデルフォルダーと provider も指定してください。
+設定画面でエンジン・Execution Providerを選択して保存します。日本語 / transcribe は固定です。Whisper は CUDA/CPU、SenseVoice は CPU/Auto に対応します。モデルフォルダーは既存モデルを使う場合に指定できます。
 
-保存先は `%LOCALAPPDATA%\SenseVoiceInput\settings.json`。`--settings-dir <path>` で隔離可能。`--model-dir` / `--engine WhisperOnnx` / `--backend CUDA` は起動時上書き、`--settings` は設定画面を表示します。未保存の初期モデルパスは実行ファイル横の `models/whisper-large-v3-turbo`。相対モデルパスは従来どおりプロセスの作業ディレクトリ基準です。
+設定の保存先は従来どおり `%LOCALAPPDATA%\SenseVoiceInput\settings.json`。`--settings-dir <path>` で隔離可能。`--model-dir` / `--engine WhisperOnnx` / `--backend CUDA` は起動時上書き、`--settings` は設定画面を表示します。初期モデルパスは `%LOCALAPPDATA%\sensevoice-input\models\whisper-large-v3-turbo`。相対モデルパスは従来どおりプロセスの作業ディレクトリ基準です。
 
 旧設定に `engine` がなく `modelDirectory` がある場合、既存 SenseVoice 設定として維持し案内を表示します。マイクとトリガーは変更しません。旧 Caps Lock 専用設定は引き続き再設定が必要です。不正なトリガーは該当機能を無効にし、元の設定ファイルを勝手に上書きしません。
 
