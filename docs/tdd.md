@@ -31,3 +31,13 @@ Clipboard の退避失敗後、Unicode fallback の2件を Red（専用例外未
 
 ## 自動録音
 Silero VAD・終了待ち・OFF後の設定操作復帰のRed/Greenと実マイク検証を [automatic-recording.md](automatic-recording.md) に記録。7件追加、全93件成功。
+
+## IME OFF（2026-09-24）
+
+ブランチ `feature/ime-off-before-input`。PTT/AUTO共通のTextInjectionServiceで、foreground確認→IME OFF→キャンセル/foreground再確認→文字入力の順序に変更。空の結果と事前キャンセルではIMEに触れない。入力後にONへ戻さない。
+
+Windows側はGetGUIThreadInfoで現在の子入力ウィンドウを取得し、ImmGetDefaultIMEWndへWM_IME_CONTROL / IMC_SETOPENSTATUS(FALSE)を送る。IMC_GETOPENSTATUSでOFFを確認する。各メッセージはSendMessageTimeoutで250ms制限。修飾キーが残っている場合は切替前に拒否。切替の前後でforegroundおよび子フォーカスを確認する。IMEウィンドウがない場合は何もせず入力を続けるため、IMM非対応/独自TSFアプリでのIME OFFは保証しない。
+
+5件のテストを追加し、未実装で5件のassertion failureを確認した後に実装。両方式の呼び出し順序・IME失敗時の入力抑止・切替中の焦点変更を検証。全98件（Core79/Windows19）、実モデル・VAD・マイクを含むRelease実行は全成功、skip0。ビルド警告0/エラー0。IMEをONにした実入力先への動作は未確認。
+
+参考: https://learn.microsoft.com/windows/win32/api/imm/nf-imm-immgetdefaultimewnd 、https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getguithreadinfo 、https://github.com/microsoft/PowerToys/issues/30976 。

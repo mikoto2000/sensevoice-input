@@ -7,6 +7,11 @@ public sealed class ClipboardDesktop(Func<int> restoreDelayMs) : IClipboardDeskt
 {
     public bool IsTargetCurrent(nint target) => target != 0 && Win32.IsWindow(target) && Win32.GetForegroundWindow() == target;
     public uint Sequence => Win32.GetClipboardSequenceNumber();
+    public void DisableIme(nint target)
+    {
+        if (!IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わりました。");
+        InputMethodControl.Disable(target);
+    }
     public object? Snapshot()
     {
         var original = Clipboard.GetDataObject();

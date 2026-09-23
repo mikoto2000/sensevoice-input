@@ -10,7 +10,13 @@ public sealed class TextInjectionService(IClipboardDesktop desktop, Func<TextInp
     {
         if (string.IsNullOrWhiteSpace(text)) return Task.CompletedTask;
         cancellationToken.ThrowIfCancellationRequested();
-        switch (mode())
+        var inputMode = mode();
+        if (!Enum.IsDefined(inputMode)) throw new ArgumentOutOfRangeException(nameof(mode));
+        if (!desktop.IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わったため入力を中止しました。");
+        desktop.DisableIme(target);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!desktop.IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わったため入力を中止しました。");
+        switch (inputMode)
         {
             case TextInputMode.Clipboard:
                 return clipboard.InjectAsync(text, target, cancellationToken);

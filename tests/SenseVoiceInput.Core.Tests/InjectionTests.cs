@@ -3,6 +3,27 @@ namespace SenseVoiceInput.Core.Tests;
 public class InjectionTests
 {
     private readonly FakeDesktop desktop = new();
+    [Theory] [InlineData(TextInputMode.Unicode)] [InlineData(TextInputMode.Clipboard)]
+    public async Task ImeIsDisabledBeforeEitherInputMethod(TextInputMode mode)
+    {
+        await new TextInjectionService(desktop, () => mode).InjectAsync("日本語", 42);
+        Assert.Equal("ime-off", desktop.Calls[0]);
+        Assert.Equal("日本語", desktop.Pasted);
+    }
+    [Theory] [InlineData(TextInputMode.Unicode)] [InlineData(TextInputMode.Clipboard)]
+    public async Task ImeFailurePreventsInputAndClipboardChanges(TextInputMode mode)
+    {
+        desktop.FailIme = true;
+        await Assert.ThrowsAsync<IOException>(() => new TextInjectionService(desktop, () => mode).InjectAsync("text", 42));
+        Assert.Equal(new[] { "ime-off" }, desktop.Calls); Assert.Null(desktop.Pasted);
+        Assert.Equal("before", desktop.Content);
+    }
+    [Fact] public async Task FocusChangeDuringImeOperationAbortsInput()
+    {
+        desktop.ChangeFocusOnIme = true;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new TextInjectionService(desktop, () => TextInputMode.Unicode).InjectAsync("text", 42));
+        Assert.Equal(new[] { "ime-off" }, desktop.Calls); Assert.Null(desktop.Pasted);
+    }
     [Theory] [InlineData(false)] [InlineData(true)]
     public async Task DirectInputNeverReadsOrChangesClipboard(bool unreadable)
     {
@@ -11,7 +32,7 @@ public class InjectionTests
         Assert.Equal("日本語😀", desktop.Pasted);
         Assert.Equal("before", desktop.Content);
         Assert.Equal(0u, desktop.Sequence);
-        Assert.Equal(new[] { "direct" }, desktop.Calls);
+        Assert.Equal(new[] { "ime-off", "direct" }, desktop.Calls);
     }
     [Fact] public async Task DirectInputRejectsChangedTarget()
     {
@@ -32,13 +53,13 @@ public class InjectionTests
         await sut.InjectAsync("direct", 42);
         mode = TextInputMode.Clipboard;
         await sut.InjectAsync("paste", 42);
-        Assert.Equal(new[] { "direct", "snapshot", "set", "paste", "settle", "restore" }, desktop.Calls);
+        Assert.Equal(new[] { "ime-off", "direct", "ime-off", "snapshot", "set", "paste", "settle", "restore" }, desktop.Calls);
     }
     [Fact] public async Task ClipboardModeDoesNotSilentlySwitchMethods()
     {
         desktop.Unreadable = true;
         await Assert.ThrowsAsync<ClipboardSnapshotUnavailableException>(() => new TextInjectionService(desktop, () => TextInputMode.Clipboard).InjectAsync("text", 42));
-        Assert.Equal(new[] { "snapshot" }, desktop.Calls);
+        Assert.Equal(new[] { "ime-off", "snapshot" }, desktop.Calls);
     }
     [Fact] public async Task PasteRestoresClipboardAfterConsumerCompletes()
     {
@@ -72,10 +93,11 @@ public class InjectionTests
         public string Content = "before";
         public string? Pasted;
         public uint Sequence { get; private set; }
-        public bool ChangeDuringPaste, FailPaste, ChangeFocusOnSet, Unreadable;
+        public bool ChangeDuringPaste, FailPaste, ChangeFocusOnSet, Unreadable, FailIme, ChangeFocusOnIme;
         public CancellationTokenSource? CancelOnPaste;
         public List<string> Calls = [];
         public bool IsTargetCurrent(nint target) => target == Foreground;
+        public void DisableIme(nint target) { Calls.Add("ime-off"); if (FailIme) throw new IOException(); if (ChangeFocusOnIme) Foreground = 43; }
         public object Snapshot() { Calls.Add("snapshot"); if (Unreadable) throw new ClipboardSnapshotUnavailableException(); return Content; }
         public void TypeText(string text, nint target) { Calls.Add("direct"); Pasted = text; }
         public void SetText(string text) { Calls.Add("set"); Content = text; Sequence++; if (ChangeFocusOnSet) Foreground = 43; }

@@ -44,7 +44,7 @@ internal static class Win32
         if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>()) != inputs.Length)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Unicode input failed or was partial. Check target integrity level / UIPI.");
     }
-    private static void EnsureModifiersReleased()
+    internal static void EnsureModifiersReleased()
     {
         if (new[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }.Any(key => (GetAsyncKeyState(key) & 0x8000) != 0))
             throw new InvalidOperationException("修飾キーを離してから音声入力してください。");

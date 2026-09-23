@@ -4,6 +4,7 @@ public sealed class ClipboardSnapshotUnavailableException(Exception? inner = nul
 public interface IClipboardDesktop
 {
     bool IsTargetCurrent(nint target);
+    void DisableIme(nint target);
     uint Sequence { get; }
     object? Snapshot();
     void TypeText(string text, nint target);
