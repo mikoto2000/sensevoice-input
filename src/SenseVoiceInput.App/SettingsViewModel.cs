@@ -7,7 +7,8 @@ namespace SenseVoiceInput.App;
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
-    public IReadOnlyList<MicrophoneDevice> Microphones { get; set; } = [new(null, "Default microphone")];
+    private IReadOnlyList<MicrophoneDevice> microphones = [new(null, "Default microphone")];
+    public IReadOnlyList<MicrophoneDevice> Microphones { get => microphones; set { microphones = value; Notify(); } }
     public RecognitionBackend[] Backends { get; } = [RecognitionBackend.Auto, RecognitionBackend.CPU];
     public string? MicrophoneDeviceId { get; set; }
     public RecognitionBackend Backend { get; set; }

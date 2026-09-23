@@ -15,7 +15,9 @@ public static partial class RecognitionOptions
         var root = doc.RootElement;
         string text = root.GetProperty("text").GetString() ?? "";
         string lang = root.TryGetProperty("lang", out var value) ? value.GetString() ?? "ja" : "ja";
-        return new(Tags().Replace(text, "").Trim(), Tags().Replace(lang, "").Trim() is { Length: > 0 } clean ? clean : "ja");
+        lang = lang.Trim();
+        if (lang.StartsWith("<|", StringComparison.Ordinal) && lang.EndsWith("|>", StringComparison.Ordinal)) lang = lang[2..^2];
+        return new(Tags().Replace(text, "").Trim(), lang.Length > 0 ? lang : "ja");
     }
     [GeneratedRegex(@"<\|[^|]*\|>")]
     private static partial Regex Tags();
