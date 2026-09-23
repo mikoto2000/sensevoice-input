@@ -29,4 +29,4 @@ PTTは `Idle -> Recording -> Recognizing -> Injecting -> Idle`、空結果なら
 
 Unicode直接入力が標準でClipboardを読まない。IME OFFを要求してからforegroundを再確認しUTF-16のSendInputを行う。貼り付け方式は明示選択時だけClipboardを退避し、履歴/同期除外形式を付加して貼り付ける。復元はsequence numberが変わらない場合だけ行い、途中の新しいコピーを上書きしない。貼り付け後の復元待ちはキャンセルしない。部分送信を自動再送しない。
 
-通常ログは状態イベント、ASR数値メタデータ、例外型・分類・HResult・スタックのみ。ASR本文は渡さない。録音・特徴量・cacheの管理バッファは処理後に消去し、native出力はusingで破棄する。OS/ランタイム内の全コピー消去までは保証しない。明示的な開発用AsrCompareは比較目的で本文を出力する。
+通常ログは状態イベント、ASR数値メタデータ、例外型・分類・HResult・スタックのみ。ASR本文は渡さない。録音・特徴量・cacheの管理バッファは処理後に消去し、native出力はusingで破棄する。OS/ランタイム内の全コピー消去までは保証しない。認識本文を明示的に確認する場合は、実モデルの統合テストの詳細出力を使用する（手順は [DEVELOP.md](../DEVELOP.md)）。

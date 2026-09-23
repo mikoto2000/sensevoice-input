@@ -120,13 +120,13 @@ Log-Mel の数値 fixture は [生成手順](tests/SenseVoiceInput.Windows.Tests
 
 ## 音声認識の実測と診断
 
-発話本文を標準出力に表示する開発用コマンド:
+上の実モデル用の環境変数を設定すると、既存の統合テストで日本語 WAV の認識結果・処理時間・RTF とセッション再利用を確認できます。
 
 ```powershell
-dotnet run --project tools/AsrCompare -c Release -- models/whisper-large-v3-turbo CPU sample1.wav sample2.wav
+dotnet test tests/SenseVoiceInput.Windows.Tests -c Release --filter 'FullyQualifiedName~WhisperIntegrationTests.JapaneseWaveAndSessionReuse' --logger 'console;verbosity=detailed'
 ```
 
-PCM/float WAV に対応し、各 WAV を Whisper で2回実行してセッション再利用を確認します。旧 A/B 比較ツールのプロジェクト名は残していますが、SenseVoice は実行しません。
+このテストは同じ音声を2回認識し、詳細出力に発話本文も表示します。実モデル用の環境変数を設定していなければスキップされます。複数の音声を確認する場合は `WHISPER_TEST_WAV` を切り替えて実行してください。
 
 通常の `diagnostic.log` にはモデルロード時間、provider、音声長、前処理/encoder/decoder/合計時間、トークン数、RTF、エラー分類を記録します。発話本文・録音・例外メッセージは含めません。
 
