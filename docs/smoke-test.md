@@ -1,3 +1,5 @@
+> この文書は実装・検証時点の記録です。公開版は Whisper＋Silero（ONNX Runtime 直接実行）構成で、SenseVoice・sherpa-onnx の実行依存は削除しました。現在のセットアップと配布条件は [README](../README.md) と [第三者通知](../THIRD_PARTY_NOTICES.md) を参照してください。
+
 最新の Whisper 移行検証（120件成功、CUDA/CPU、画面保存、認識比較）は [whisper-onnx.md](whisper-onnx.md) を参照。以下は初期MVPの履歴です。現行トリガーは任意設定で、Caps Lock固定ではありません。
 
 最新の自動録音版は全93件成功・skip0。実Silero VADと自動マイク→PTT切替を確認。ユーザー発話での最終入力は確認待ち。[詳細](automatic-recording.md)。

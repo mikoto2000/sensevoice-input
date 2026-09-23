@@ -1,0 +1,6 @@
+Silero VAD v4, Silero Team (MIT).
+Upstream: https://github.com/snakers4/silero-vad/tree/v4.0
+Distribution: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx
+SHA256: 9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6
+Downloaded unchanged. Runtime: Microsoft ONNX Runtime CPU; sherpa-onnx is not bundled.
+License text: Silero-VAD-LICENSE.txt (upstream v4.0).

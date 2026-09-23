@@ -3,8 +3,8 @@ namespace SenseVoiceInput.Core;
 public sealed record AudioData(float[] Samples, int SampleRate);
 public sealed record SpeechRecognitionResult(string Text, string Language)
 {
-    public string Engine { get; init; } = "sensevoice";
-    public string Model { get; init; } = "SenseVoiceSmall";
+    public string Engine { get; init; } = "whisper";
+    public string Model { get; init; } = "whisper-large-v3-turbo";
     public string Provider { get; init; } = "CPU";
     public TimeSpan AudioDuration { get; init; }
     public TimeSpan Duration { get; init; }

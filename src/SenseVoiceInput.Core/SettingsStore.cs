@@ -44,8 +44,8 @@ public sealed record AppSettings
         if (PushToTalk.Enabled && AutoVoiceInput.Enabled && TriggerValidation.Conflicts(PushToTalk.Trigger, AutoVoiceInput.ToggleTrigger)) throw new ArgumentException("PTT と自動入力のトリガーが競合しています。");
         if (!Enum.IsDefined(Engine)) throw new ArgumentOutOfRangeException(nameof(Engine));
         if (Language != "ja") throw new ArgumentException("言語は日本語（ja）を指定してください。");
-        if (Engine == RecognitionEngine.SenseVoice) _ = RecognitionOptions.Provider(Backend);
-        else if (Backend is not (RecognitionBackend.CPU or RecognitionBackend.CUDA)) throw new ArgumentException("Whisper は CUDA または CPU を選択してください。");
+        if (Engine != RecognitionEngine.WhisperOnnx) throw new ArgumentException("公開版は Whisper のみ対応しています。");
+        if (Backend is not (RecognitionBackend.CPU or RecognitionBackend.CUDA)) throw new ArgumentException("Whisper は CUDA または CPU を選択してください。");
         if (!Enum.IsDefined(TextInputMode)) throw new ArgumentOutOfRangeException(nameof(TextInputMode));
         if (string.IsNullOrWhiteSpace(ModelDirectory)) throw new ArgumentException("Model directory is required.");
         if (PasteRestoreDelayMs is < 500 or > 10000) throw new ArgumentOutOfRangeException(nameof(PasteRestoreDelayMs));
@@ -82,9 +82,14 @@ public sealed class SettingsStore(string path)
             {
                 root["engine"] = "SenseVoice";
                 if (!root.ContainsKey("backend")) root["backend"] = "CPU";
-                Warnings.Add("既存の SenseVoice 設定を保持しました。Whisper を使うにはエンジン、モデルフォルダー、CUDA を選択してください。");
             }
             var settings = root.Deserialize<AppSettings>(Options)! with { PushToTalk = ptt, AutoVoiceInput = auto };
+            if (settings.Engine == RecognitionEngine.SenseVoice)
+            {
+                settings = settings with { Engine = RecognitionEngine.WhisperOnnx, ModelDirectory = ModelPaths.Whisper,
+                    Backend = settings.Backend == RecognitionBackend.CUDA ? RecognitionBackend.CUDA : RecognitionBackend.CPU };
+                Warnings.Add("SenseVoice は公開版から削除されました。マイクとキー設定を保持し、Whisper に移行しました。元の設定ファイルは保存するまで変更しません。");
+            }
             if (ptt.Enabled && auto.Enabled && TriggerValidation.Conflicts(ptt.Trigger, auto.ToggleTrigger))
             { settings = settings with { AutoVoiceInput = auto with { Enabled = false } }; Warnings.Add("トリガー競合のため自動音声入力だけを無効化しました。"); }
             settings.Validate(); return settings;

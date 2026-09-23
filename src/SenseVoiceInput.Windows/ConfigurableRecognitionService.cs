@@ -20,7 +20,7 @@ public sealed class ConfigurableRecognitionService(Func<AppSettings> settings, A
                 current=s.Engine switch
                 {
                     RecognitionEngine.WhisperOnnx=>new WhisperOnnxRecognitionService(next.Item2,s.Backend,diagnostic),
-                    RecognitionEngine.SenseVoice=>new SenseVoiceRecognitionService(()=>next.Item2,()=>s.Backend),
+                    RecognitionEngine.SenseVoice=>throw new NotSupportedException("公開版は Whisper のみ対応しています。設定を更新してください。"),
                     _=>throw new ArgumentOutOfRangeException(nameof(s.Engine))
                 };
                 key=next;

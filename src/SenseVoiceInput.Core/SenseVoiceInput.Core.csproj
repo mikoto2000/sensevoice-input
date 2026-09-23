@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\..\scripts\cuda-runtime-manifest.json" LogicalName="SenseVoiceInput.Core.cuda-runtime-manifest.json" />
     <EmbeddedResource Include="..\..\scripts\whisper-model-manifest.json" LogicalName="SenseVoiceInput.Core.whisper-model-manifest.json" />
+    <EmbeddedResource Include="..\..\licenses\Whisper-*.txt;..\..\licenses\Silero-VAD-*.txt" LogicalName="SenseVoiceInput.Core.licenses.%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

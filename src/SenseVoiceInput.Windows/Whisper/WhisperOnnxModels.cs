@@ -33,7 +33,7 @@ public sealed class WhisperModelSessionFactory
                 cuda.UpdateOptions(new Dictionary<string,string> { ["device_id"] = "0", ["cudnn_conv_algo_search"] = "HEURISTIC", ["cudnn_conv_use_max_workspace"] = "0" });
                 options.AppendExecutionProvider_CUDA(cuda);
             }
-            catch (Exception e) { throw new SpeechRecognitionException(RecognitionError.CudaUnavailable, "CUDA 13 / cuDNN 9 の DLL と NVIDIA ドライバーを確認してください。CPU へは自動変更しません。", e); }
+            catch (Exception e) { throw new SpeechRecognitionException(RecognitionError.CudaUnavailable, "GPUを初期化できません。設定画面の「モデル・GPUの準備を再試行」を実行してください。解消しない場合はNVIDIAドライバーを更新してアプリを再起動するか、BackendをCPUにして保存してください。", e); }
         }
         else if (backend != RecognitionBackend.CPU) throw new ArgumentException("Whisper は CUDA または CPU を指定してください。");
         try { return new InferenceSession(path, options); }

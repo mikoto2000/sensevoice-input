@@ -135,7 +135,7 @@ public sealed class ApplicationSession : IDisposable
     }
     private void SaveSettings(AppSettings value)
     {
-        if (downloadCancellation != null) throw new InvalidOperationException("モデルのダウンロード完了後に保存してください。");
+        if (downloadCancellation != null) throw new InvalidOperationException("準備の完了または中止後に保存してください。");
         if (autoVoice.IsProcessing || coordinator.State != InputState.Idle) throw new InvalidOperationException("音声処理の完了後に保存してください。");
         if (triggers.IsCapturing) throw new InvalidOperationException("キー設定を完了またはキャンセルしてください。");
         triggers.Apply(value);
@@ -161,7 +161,7 @@ public sealed class ApplicationSession : IDisposable
         viewModel.Downloading = true;
         viewModel.DownloadIndeterminate = true;
         viewModel.DownloadPercent = 0;
-        viewModel.DownloadStatus = "モデルを確認しています…";
+        viewModel.DownloadStatus = "モデル・GPUの準備を確認しています…";
         UpdateStatus();
         try
         {
@@ -174,6 +174,27 @@ public sealed class ApplicationSession : IDisposable
                 string total = p.TotalBytes is > 0 ? $" / {p.TotalBytes.Value / 1048576.0:F1} MB" : "";
                 viewModel.DownloadStatus = $"{p.FileName}  {p.BytesReceived / 1048576.0:F1} MB{total}";
             });
+            if (settings.Engine == RecognitionEngine.WhisperOnnx && settings.Backend == RecognitionBackend.CUDA)
+            {
+                viewModel.DownloadStatus = "GPUを確認しています…";
+                await Task.Run(CudaDriverCheck.Verify, cancellation.Token);
+                if (CudaRuntimeProvisioner.FindExisting(AppContext.BaseDirectory) == null)
+                {
+                    OpenSettings();
+                    var consent = MessageBox.Show(window,
+                        "CUDA/cuDNN は NVIDIA の独自ライセンスに従います（本体の MIT 対象外）。\n\n" +
+                        "条件: https://docs.nvidia.com/cuda/eula/index.html\n" +
+                        "https://docs.nvidia.com/deeplearning/cudnn/backend/latest/reference/eula.html\n\n" +
+                        "取得する固定バージョンの原文: " + Path.Combine(AppContext.BaseDirectory, "licenses", "nvidia") +
+                        "\n\n条件に同意して GPU 用ファイルを取得しますか？ CPU を選択すれば取得は不要です。",
+                        "NVIDIA ランタイムの利用条件", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.No);
+                    if (consent != MessageBoxResult.Yes) throw new InvalidOperationException("GPU用ファイルの取得を中止しました。Backend を CPU にして保存するか、条件を確認して再試行してください。");
+                }
+                string runtime = await Task.Run(() => new CudaRuntimeProvisioner().EnsureAsync(
+                    AppContext.BaseDirectory, progress, cancellation.Token), cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                CudaRuntimeProvisioner.Activate(runtime);
+            }
             var prepared = await new ModelProvisioner().EnsureAsync(settings, progress, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             if (disposed || exiting) return;
@@ -183,7 +204,8 @@ public sealed class ApplicationSession : IDisposable
             viewModel.ModelDirectory = settings.ModelDirectory;
             viewModel.VadModelPath = settings.AutoVoiceInput.Vad.ModelPath;
             modelsReady = true;
-            viewModel.DownloadStatus = "モデルの準備ができました。";
+            viewModel.Error = "";
+            viewModel.DownloadStatus = "音声入力の準備ができました。";
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -193,7 +215,7 @@ public sealed class ApplicationSession : IDisposable
         {
             if (!disposed && !exiting)
             {
-                viewModel.DownloadStatus = $"モデルを準備できませんでした: {error.Message} 接続・空き容量を確認し、再試行してください。";
+                viewModel.DownloadStatus = $"音声入力を準備できませんでした: {error.Message} 再試行するか、設定を変更して保存してください。";
                 log.Error(error);
                 OpenSettings();
             }
@@ -218,8 +240,8 @@ public sealed class ApplicationSession : IDisposable
         tray.Text = $"SenseVoice · PTT {coordinator.State} · AUTO {(autoVoice.IsOn ? autoVoice.State.ToString() : "OFF")}";
         if (!modelsReady)
         {
-            viewModel.Status = downloadCancellation != null ? "モデルを準備中…" : "モデルの準備が必要です";
-            tray.Text = "SenseVoice Input · モデルの準備が必要です";
+            viewModel.Status = downloadCancellation != null ? "音声入力を準備中…" : "音声入力の準備が必要です";
+            tray.Text = "SenseVoice Input · 音声入力の準備が必要です";
         }
     }
     private async void ProbeFocus(object? sender, EventArgs e)

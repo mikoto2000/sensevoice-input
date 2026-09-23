@@ -9,8 +9,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     private IReadOnlyList<MicrophoneDevice> microphones = [new(null, "Default microphone")];
     public IReadOnlyList<MicrophoneDevice> Microphones { get => microphones; set { microphones = value; Notify(); } }
-    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.CUDA, RecognitionBackend.CPU, RecognitionBackend.Auto];
-    public RecognitionEngine[] Engines { get; } = Enum.GetValues<RecognitionEngine>();
+    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.CUDA, RecognitionBackend.CPU];
+    public RecognitionEngine[] Engines { get; } = [RecognitionEngine.WhisperOnnx];
     public RecognitionEngine Engine { get; set; }
     public string? MicrophoneDeviceId { get; set; }
     public RecognitionBackend Backend { get; set; }

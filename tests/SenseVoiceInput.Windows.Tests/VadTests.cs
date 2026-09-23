@@ -6,7 +6,7 @@ public class VadTests
 {
     [VadModelFact] public void CapturePacketSizeDoesNotChangeExtractedSpeech()
     {
-        using var reader = new AudioFileReader(Path.Combine(Environment.GetEnvironmentVariable("SENSEVOICE_TEST_MODEL")!, "test_wavs", "ja.wav"));
+        using var reader = new AudioFileReader(Environment.GetEnvironmentVariable("WHISPER_TEST_WAV")!);
         var raw = new float[(int)(reader.Length / sizeof(float))]; int count = reader.Read(raw, 0, raw.Length);
         var mono = new float[count / reader.WaveFormat.Channels];
         for (int i = 0; i < mono.Length; i++) for (int c = 0; c < reader.WaveFormat.Channels; c++) mono[i] += raw[i * reader.WaveFormat.Channels + c] / reader.WaveFormat.Channels;
@@ -31,13 +31,13 @@ public class VadTests
         for (int i = 0; i < 100; i++) { var data = r.Convert(Enumerable.Repeat(0.1f, 480).ToArray()); count += data.Length; Assert.All(data, v => Assert.True(float.IsFinite(v))); }
         Assert.InRange(count, 15900, 16100);
     }
-    [VadModelFact] public void NativeVadSeparatesSpeechAndSilence()
+    [VadModelFact] public void OnnxVadSeparatesSpeechAndSilence()
     {
         var model = Environment.GetEnvironmentVariable("SENSEVOICE_TEST_VAD");
-        var asr = Environment.GetEnvironmentVariable("SENSEVOICE_TEST_MODEL");
+        var wav = Environment.GetEnvironmentVariable("WHISPER_TEST_WAV");
         using var vad = new SileroVadEngine(model!, 800);
         for (int i = 0; i < 50; i++) { var result = vad.Accept(new float[512]); Assert.False(result.Speech); Assert.Null(result.Segment); }
-        using var reader = new AudioFileReader(Path.Combine(asr!, "test_wavs", "ja.wav"));
+        using var reader = new AudioFileReader(wav!);
         var raw = new float[(int)(reader.Length / sizeof(float))]; var n = reader.Read(raw, 0, raw.Length);
         var mono = new float[n / reader.WaveFormat.Channels];
         for (int i = 0; i < mono.Length; i++) for (int c = 0; c < reader.WaveFormat.Channels; c++) mono[i] += raw[i * reader.WaveFormat.Channels + c] / reader.WaveFormat.Channels;
@@ -56,7 +56,7 @@ public sealed class VadModelFactAttribute : FactAttribute
 {
     public VadModelFactAttribute()
     {
-        if (Environment.GetEnvironmentVariable("SENSEVOICE_TEST_VAD") == null || Environment.GetEnvironmentVariable("SENSEVOICE_TEST_MODEL") == null)
-            Skip = "Opt in with SENSEVOICE_TEST_VAD and SENSEVOICE_TEST_MODEL.";
+        if (Environment.GetEnvironmentVariable("SENSEVOICE_TEST_VAD") == null || Environment.GetEnvironmentVariable("WHISPER_TEST_WAV") == null)
+            Skip = "Opt in with SENSEVOICE_TEST_VAD and WHISPER_TEST_WAV.";
     }
 }

@@ -9,7 +9,6 @@ public static class ModelPaths
     public static string Root => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sensevoice-input");
     public static string Models => Path.Combine(Root, "models");
     public static string Whisper => Path.Combine(Models, "whisper-large-v3-turbo");
-    public static string SenseVoice => Path.Combine(Models, "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17");
     public static string Vad => Path.Combine(Models, "silero_vad.onnx");
 }
 

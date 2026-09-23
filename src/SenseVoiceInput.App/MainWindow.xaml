@@ -28,7 +28,7 @@
                         <ProgressBar Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" IsIndeterminate="{Binding DownloadIndeterminate}" Height="8" Margin="0,4,0,8" />
                         <Button Content="ダウンロードを中止" Command="{Binding CancelDownloadCommand}" HorizontalAlignment="Left" Padding="8" />
                     </StackPanel>
-                    <Button Content="モデルの確認・ダウンロードを再試行" Command="{Binding RetryDownloadCommand}" IsEnabled="{Binding CanEdit}" HorizontalAlignment="Left" Padding="8" Margin="0,8" />
+                    <Button Content="モデル・GPUの準備を再試行" Command="{Binding RetryDownloadCommand}" IsEnabled="{Binding CanEdit}" HorizontalAlignment="Left" Padding="8" Margin="0,8" />
                     <TextBlock Text="{Binding Error}" Foreground="#AD2424" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
@@ -60,7 +60,7 @@
                 <TextBlock Text="Execution Provider" />
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
                 <TextBlock Text="選択したエンジンのモデルフォルダー" />
-                <TextBlock Text="未配置のモデルは %LOCALAPPDATA%\sensevoice-input\models に自動ダウンロードします。Whisper は約1.62 GBです。" TextWrapping="Wrap" FontSize="12" />
+                <TextBlock Text="未配置のモデルは自動ダウンロードします。Whisper は約1.62 GBです。CUDA使用時はGPU用ファイルも自動取得します。" TextWrapping="Wrap" FontSize="12" />
                 <TextBox Text="{Binding ModelDirectory, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Model directory" />
                 <TextBlock Text="文字の入力方式" />
                 <ComboBox ItemsSource="{Binding InputModes}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding TextInputMode}" AutomationProperties.Name="Text input mode" />

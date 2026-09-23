@@ -11,7 +11,6 @@ public sealed class ModelProvisionerTests : IDisposable
     }
     [Theory]
     [InlineData(RecognitionEngine.WhisperOnnx)]
-    [InlineData(RecognitionEngine.SenseVoice)]
     public async Task CompleteCustomModelsAreReusedWithoutDownloadingOrChangingOtherSettings(RecognitionEngine engine)
     {
         var settings = Settings(engine);
@@ -38,6 +37,23 @@ public sealed class ModelProvisionerTests : IDisposable
         File.WriteAllText(Path.Combine(root, "silero_vad.onnx"), "legacy");
         Assert.Equal(explicitPath, ModelProvisioner.ResolveVadPath(settings));
         Assert.False(ModelProvisioner.IsReady(settings));
+    }
+    [Fact] public async Task RemovedEngineIsRejectedBeforeDownloading()
+    {
+        var settings = Settings(RecognitionEngine.SenseVoice);
+        Assert.False(ModelProvisioner.HasRecognitionModel(settings));
+        await Assert.ThrowsAsync<NotSupportedException>(() => new ModelProvisioner().EnsureAsync(settings, new Progress<ModelDownloadProgress>(), default));
+    }
+    [Fact] public void ModelNoticesAreAvailableOfflineAndRestoredWhenMissing()
+    {
+        ModelNotices.WriteWhisper(root); ModelNotices.WriteVad(root);
+        Assert.Contains("OpenAI", File.ReadAllText(Path.Combine(root, "Whisper-LICENSE.txt")));
+        Assert.Contains("Silero", File.ReadAllText(Path.Combine(root, "Silero-VAD-LICENSE.txt")));
+        Assert.Contains("360ebcde", File.ReadAllText(Path.Combine(root, "Whisper-SOURCE.txt")));
+        File.Delete(Path.Combine(root, "Silero-VAD-LICENSE.txt"));
+        ModelNotices.WriteVad(root);
+        Assert.True(File.Exists(Path.Combine(root, "Silero-VAD-LICENSE.txt")));
+        Assert.Empty(Directory.GetFiles(root, "*.partial"));
     }
     public void Dispose() { if (Directory.Exists(root)) Directory.Delete(root, true); }
 }

@@ -1,6 +1,7 @@
 param([string]$Destination = (Join-Path $PSScriptRoot '..\models'))
 $ErrorActionPreference = 'Stop'
 New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+Copy-Item -Path (Join-Path $PSScriptRoot '..\licenses\Silero-VAD-*.txt') -Destination $Destination -Force
 $model = Join-Path $Destination 'silero_vad.onnx'
 if (-not (Test-Path -LiteralPath $model)) {
     Invoke-WebRequest 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx' -OutFile $model

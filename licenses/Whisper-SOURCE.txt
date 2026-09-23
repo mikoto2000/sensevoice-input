@@ -1,0 +1,8 @@
+Whisper large-v3-turbo, OpenAI (MIT).
+Base model: https://huggingface.co/openai/whisper-large-v3-turbo
+ONNX conversion: onnx-community, https://huggingface.co/onnx-community/whisper-large-v3-turbo
+Revision: 360ebcde2559d60bb474678be3c1de9ef347d01a
+Files: encoder_model_fp16.onnx, decoder_model_merged_fp16.onnx and tokenizer/config files.
+Downloaded unchanged; the converter's model card refers to the OpenAI base model.
+License text: Whisper-LICENSE.txt (OpenAI Whisper v20250625).
+Checksums: scripts/whisper-model-manifest.json in the application source repository.
