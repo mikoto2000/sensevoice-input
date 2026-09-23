@@ -1,12 +1,37 @@
-﻿<Window x:Class="SenseVoiceInput.App.MainWindow"
+<Window x:Class="SenseVoiceInput.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SenseVoiceInput.App"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-
-    </Grid>
+        Title="SenseVoice Input" Width="570" Height="680" MinWidth="520" MinHeight="620"
+        WindowStartupLocation="CenterScreen" Background="#F4F6FA" FontFamily="Yu Gothic UI" FontSize="14">
+    <Window.Resources>
+        <Style TargetType="TextBlock"><Setter Property="Margin" Value="0,0,0,6" /></Style>
+        <Style TargetType="TextBox"><Setter Property="Padding" Value="9" /><Setter Property="Margin" Value="0,0,0,16" /></Style>
+        <Style TargetType="ComboBox"><Setter Property="Padding" Value="8" /><Setter Property="Margin" Value="0,0,0,16" /></Style>
+    </Window.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="30">
+            <TextBlock Text="SenseVoice Input" FontSize="28" FontWeight="SemiBold" Foreground="#172C44" />
+            <TextBlock Text="Caps Lock を押して話し、離すと入力します。" Foreground="#42556D" Margin="0,4,0,24" />
+            <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="STATUS" FontSize="11" Foreground="#52657D" />
+                    <TextBlock Text="{Binding Status}" FontSize="19" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Error}" Foreground="#AD2424" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <StackPanel IsEnabled="{Binding CanEdit}">
+                <TextBlock Text="マイク" />
+                <ComboBox ItemsSource="{Binding Microphones}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding MicrophoneDeviceId}" AutomationProperties.Name="Microphone" />
+                <TextBlock Text="Push-to-Talk : Caps Lock（録音専用）" />
+                <TextBlock Text="認識バックエンド" Margin="0,12,0,6" />
+                <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
+                <TextBlock Text="SenseVoiceSmall モデルフォルダー" />
+                <TextBox Text="{Binding ModelDirectory, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Model directory" />
+                <TextBlock Text="クリップボード復元待機時間（500～10000 ms）" />
+                <TextBox Text="{Binding PasteRestoreDelay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Clipboard restore delay" />
+                <Button Content="設定を保存" Command="{Binding SaveCommand}" Padding="16,10" HorizontalAlignment="Left" Background="#183E62" Foreground="White" />
+            </StackPanel>
+            <TextBlock Text="音声認識はこの PC 内で実行します。閉じるとトレイに戻ります。終了はトレイの Exit から。" TextWrapping="Wrap" Foreground="#52657D" Margin="0,20,0,0" />
+        </StackPanel>
+    </ScrollViewer>
 </Window>
