@@ -31,6 +31,7 @@ public sealed class ApplicationSession : IDisposable
     private CancellationTokenSource? downloadCancellation;
     private Task? downloadTask;
     private bool modelsReady;
+    private bool previousAutoOn;
     private string focusIdentity = "";
     private nint autoTarget;
     private string autoFieldIdentity = "";
@@ -228,6 +229,14 @@ public sealed class ApplicationSession : IDisposable
     }
     private void OnAutoState(AutoVoiceState state)
     {
+        if (previousAutoOn != autoVoice.IsOn)
+        {
+            previousAutoOn = autoVoice.IsOn;
+            if (!exiting && !disposed)
+                tray.ShowBalloonTip(3000, $"SenseVoice Input · AUTO {(previousAutoOn ? "ON" : "OFF")}",
+                    previousAutoOn ? "自動音声入力をオンにしました。" : "自動音声入力をオフにしました。",
+                    Forms.ToolTipIcon.Info);
+        }
         if (state == AutoVoiceState.Listening) { autoTarget = new ForegroundWindowService().GetForegroundWindow(); autoFieldIdentity = focusIdentity; log.Write(DiagnosticEvent.AutoSpeechStarted); }
         if (state == AutoVoiceState.Processing) log.Write(DiagnosticEvent.AutoProcessingStarted);
         UpdateStatus();
