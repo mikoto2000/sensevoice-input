@@ -159,6 +159,38 @@ dotnet test -c Release --no-restore
 
 依存を更新する際は、lockfile、manifest、[第三者通知](THIRD_PARTY_NOTICES.md)、ライセンス原文と [取得元・ハッシュ](licenses/sources.json) を合わせて更新します。モデルとビルド成果物は Git 対象外です。
 
+## GitHub Releases への ZIP 公開
+
+[Release Windows ZIP](.github/workflows/release.yml) は、`v1.0.0` のような `v` 付きバージョンタグの push で起動します。`v1.0.0-rc.1` などハイフン付きのタグはプレリリースとして公開します。
+
+リリース対象の変更（ワークフローを含む）をコミットして GitHub に push した後、対象コミットにタグを付けます。
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+タグは `vMAJOR.MINOR.PATCH`、または `vMAJOR.MINOR.PATCH-rc.1` などの形式を使用してください。ブランチの push だけでは起動しません。ワークフローはタグのコミットを Windows runner で checkout し、`global.json` の SDK を導入して以下を実行します。
+
+1. `dotnet restore --locked-mode` と通常テスト（モデル・GPU・実マイクのテストはスキップ）。
+2. `scripts/publish.ps1` による Windows x64 の配布ビルド。
+3. `SenseVoiceInput-v1.0.0-win-x64.zip` と、同名に `.sha256` を付けた検証ファイルの作成。
+4. GitHub Release を下書きで作成し、両ファイルのアップロード完了後に公開。
+
+ZIP は同名のトップレベルフォルダーを持ち、アプリ・ドキュメント・ライセンスを含みます。.NET Desktop Runtime 10 x64 は別途必要です。モデル・NVIDIA DLL は含めません。リリース本文には導入手順と GitHub が生成した変更履歴を載せます。
+
+公開には組み込みの `GITHUB_TOKEN` とジョブの `contents: write` 権限を使い、追加の PAT は不要です。リポジトリ・組織側で GitHub Actions と当該権限が許可されている必要があります。使用する Actions はコミット SHA で固定しています。
+
+失敗した実行は Actions 画面から再実行できます。アップロード途中の下書きがあれば添付を更新して再開します。公開済みの同じタグのリリースは変更せず、エラーで停止します。公開済み成果物を修正するときは新しいバージョンタグを作成してください。
+
+GitHub に公開せず、同じ ZIP 作成をローカルで確認する場合:
+
+```powershell
+.\scripts\package-release.ps1 -Version v1.0.0 -OutputDirectory artifacts/packages
+```
+
+出力済みの ZIP や SHA256 は上書きしません。再確認には別の出力先を指定してください。
+
 ## 設計・過去の検証記録
 
 以下は各実装・検証時点の記録です。削除済みの SenseVoice や sherpa-onnx に関する記載も残っています。現在の開発・配布手順はこの文書を優先してください。

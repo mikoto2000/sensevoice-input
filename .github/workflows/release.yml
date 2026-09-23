@@ -1,0 +1,96 @@
+name: Release Windows ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Validate release tag
+        run: |
+          if ($env:RELEASE_TAG -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$') {
+            throw 'Use a tag such as v1.0.0 or v1.0.0-rc.1.'
+          }
+
+      - name: Install SDK from global.json
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore locked dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Run tests without models or hardware
+        run: dotnet test -c Release --no-restore
+
+      - name: Publish and package Windows x64
+        run: ./scripts/package-release.ps1 -Version $env:RELEASE_TAG
+
+      - name: Create release and upload ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:RELEASE_TAG
+          $name = "SenseVoiceInput-$tag-win-x64"
+          $zip = Join-Path 'artifacts/packages' "$name.zip"
+          $checksum = "$zip.sha256"
+          $notes = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          @'
+          Windows 11 x64 向けの音声入力アプリです。
+
+          1. ZIP をダウンロードして展開してください。
+          2. .NET Desktop Runtime 10 x64 をインストールしてください。
+          3. 展開先の SenseVoiceInput.App.exe を起動してください。
+
+          使い方は同梱の README.md、ライセンスは LICENSE と THIRD_PARTY_NOTICES.md を参照してください。
+          モデル（Whisper は約1.62 GB）は初回起動時に取得します。NVIDIA GPU を使わない場合は設定で CPU を選択してください。
+          CUDA/cuDNN は利用条件への同意後に取得します。モデル・NVIDIA DLL は ZIP に含みません。
+          ZIP の検証用に SHA256 ファイルを添付しています。
+          '@ | Set-Content -LiteralPath $notes -Encoding utf8
+
+          # Resume an interrupted draft upload, but never overwrite a published release.
+          $existing = gh release view $tag --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (-not ($existing | ConvertFrom-Json).isDraft) {
+              throw 'This tag already has a published release. Use a new version tag.'
+            }
+          } else {
+            $arguments = @('release', 'create', $tag, '--verify-tag', '--draft', '--title', "SenseVoice Input $tag", '--notes-file', $notes, '--generate-notes')
+            if ($tag.Contains('-')) { $arguments += '--prerelease' }
+            & gh @arguments
+            if ($LASTEXITCODE -ne 0) { throw 'Failed to create draft release.' }
+          }
+          gh release upload $tag $zip $checksum --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Upload failed; the release remains a draft. Re-run this workflow to retry.' }
+          $arguments = @('release', 'edit', $tag, '--draft=false')
+          if ($tag.Contains('-')) { $arguments += @('--prerelease', '--latest=false') }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to publish release; re-run this workflow to retry.' }
