@@ -80,7 +80,7 @@ public sealed class ApplicationSession : IDisposable
         triggers.CaptureCompleted += capture => app.Dispatcher.BeginInvoke(() => { viewModel.CompleteCapture(capturePtt, capture); autoVoice.SetSuspended(false); });
         viewModel.CaptureRequested += (ptt, type, interval) => { triggers.BeginCapture(type, interval); capturePtt = ptt; autoVoice.SetSuspended(true); };
         window.IsVisibleChanged += (_, _) => { if (!window.IsVisible) { triggers.CancelCapture(); autoVoice.SetSuspended(coordinator.State != InputState.Idle); } };
-        focusTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+        focusTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
         focusTimer.Tick += ProbeFocus;
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Open Settings", null, (_, _) => OpenSettings());

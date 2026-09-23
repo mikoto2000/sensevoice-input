@@ -41,3 +41,13 @@ Windows側はGetGUIThreadInfoで現在の子入力ウィンドウを取得し、
 5件のテストを追加し、未実装で5件のassertion failureを確認した後に実装。両方式の呼び出し順序・IME失敗時の入力抑止・切替中の焦点変更を検証。全98件（Core79/Windows19）、実モデル・VAD・マイクを含むRelease実行は全成功、skip0。ビルド警告0/エラー0。IMEをONにした実入力先への動作は未確認。
 
 参考: https://learn.microsoft.com/windows/win32/api/imm/nf-imm-immgetdefaultimewnd 、https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getguithreadinfo 、https://github.com/microsoft/PowerToys/issues/30976 。
+
+## 語頭欠けの改善（2026-09-24）
+
+`fix/auto-speech-preroll`。native VADに可変長のWASAPIパケットをそのまま渡すと、区間開始がパケットサイズに依存する問題を公式日本語wavで再現した。512サンプルと1600サンプルで切り出し音声が異なるテストのRedを確認後、常に512サンプル（32ms）単位でnativeへ渡すことでGreenにした。
+
+加えてVAD区間より前の500msを音声認識へ含める。65秒分の上限付きメモリリングで元音声を保持し、区間の絶対サンプル番号で前置する。以前の発話末尾より前へ戻らないため前の言葉を重複させない。セッション開始以前へ戻らず、OFF・停止時にメモリを消去する。3件のCoreテストを未定義型のRed→Greenで追加（弱い語頭、連続区間、リング折り返し/開始直後）。
+
+入力欄フォーカス確認は500msから100msへ短縮。同時問い合わせは引き続き1件まで。マイク起動前や認識処理中の音声は復元できない。AUTO ARMED後の語頭欠けを抑える変更であり、無停止の連続認識ではない。
+
+全102件（Core82/Windows20）成功、skip0。実SenseVoice・Silero・マイクを含む。Release publish成功。ユーザーの実発話での改善度は未確認。

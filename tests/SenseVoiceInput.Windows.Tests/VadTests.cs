@@ -4,6 +4,26 @@ using SenseVoiceInput.Windows;
 namespace SenseVoiceInput.Windows.Tests;
 public class VadTests
 {
+    [VadModelFact] public void CapturePacketSizeDoesNotChangeExtractedSpeech()
+    {
+        using var reader = new AudioFileReader(Path.Combine(Environment.GetEnvironmentVariable("SENSEVOICE_TEST_MODEL")!, "test_wavs", "ja.wav"));
+        var raw = new float[(int)(reader.Length / sizeof(float))]; int count = reader.Read(raw, 0, raw.Length);
+        var mono = new float[count / reader.WaveFormat.Channels];
+        for (int i = 0; i < mono.Length; i++) for (int c = 0; c < reader.WaveFormat.Channels; c++) mono[i] += raw[i * reader.WaveFormat.Channels + c] / reader.WaveFormat.Channels;
+        var samples = new float[16000].Concat(new VadResampler(reader.WaveFormat.SampleRate).Convert(mono)).Concat(new float[32000]).ToArray();
+        float[] Extract(int packet)
+        {
+            using var vad = new SileroVadEngine(Environment.GetEnvironmentVariable("SENSEVOICE_TEST_VAD")!, 800);
+            var output = new List<float>();
+            for (int i = 0; i < samples.Length; i += packet)
+            {
+                var result = vad.Accept(samples.AsSpan(i, Math.Min(packet, samples.Length - i)).ToArray());
+                if (result.Segment is { } s) { output.AddRange(s.Samples); Array.Clear(s.Samples); }
+            }
+            return output.ToArray();
+        }
+        var expected = Extract(512); Assert.NotEmpty(expected); Assert.Equal(expected, Extract(1600));
+    }
     [Fact] public void MissingModelFailsBeforeNativeCall() => Assert.Throws<FileNotFoundException>(() => new SileroVadEngine("missing-vad.onnx", 800));
     [Fact] public void StreamingResamplerKeepsRateAndFiniteSamples()
     {
