@@ -1,0 +1,49 @@
+# Verification record
+
+実施日: 2026-09-24 (JST)。Windows 11 x64 build 26200、.NET SDK 10.0.401 / runtime 10.0.12。
+
+## Automated verification
+
+- `dotnet restore --locked-mode`: 成功。
+- `dotnet build -c Release --no-restore`: 成功、警告 0 / エラー 0。
+- Core: **37 件成功**。状態、重複・競合、エラー復帰、終了、PCM、認識結果、Clipboard 手順、設定、ログ。
+- Windows 境界: **3 件成功**。モデル欠落、事前キャンセル、短い音声。
+- 実モデル: **1 件成功**。公式 `test_wavs/ja.wav` を CPU で認識、日本語文字と `ja` メタデータ、タグ除去を検証。Fake recognizer は使用していない。
+- 実マイク: **1 件成功**。WASAPI で 500 ms の PCM 取得、停止、100 ms の再録音・停止。有限値・非空 buffer を確認し消去。発話の正確さを検証するテストではない。
+
+合計 **42 ケース**。通常の `dotnet test` は 40 件成功 + opt-in 2 件スキップ。実モデル指定の Release 検証は 41 件成功 + 実マイク 1 件スキップ（ユーザー操作を妨げないため）。マイクの 1 件は別実行で成功済み。
+
+```powershell
+$env:SENSEVOICE_TEST_MODEL = (Resolve-Path '.\models\sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17').Path
+$env:SENSEVOICE_TEST_MICROPHONE = '1'
+dotnet test -c Release
+```
+
+## Desktop observations
+
+| 項目 | 結果と確認範囲 |
+|---|---|
+| WPF 起動 | 成功。Computer Use で実ウィンドウと Ready 表示を確認 |
+| 設定保存 | 成功。保存ボタンを操作し、画面の完了表示と JSON ファイルを確認 |
+| 実録音 | 上記 WASAPI integration test 成功 |
+| 日本語推論 | 上記実モデル integration test 成功 |
+| キーから入力の処理 | ユーザーの試行中、ログに複数回の AudioCaptureStarted→Stopped→Recognition→TextInjectionCompleted を確認。ただしログだけで入力先と内容の正しさを判断しない |
+| 修飾キー中の貼り付け拒否 | 実ログで Win32.Paste からのエラー通知を確認 |
+| Notepad の目視結果 | ユーザー確認中。確定した入力文字列と Clipboard 復元は未確認 |
+| Close-to-tray / Exit | 実装済み、実 UI での最終確認は未完了 |
+| VS Code / Terminal / browser textarea | 未実施 |
+
+**単体テスト成功をもって、すべての Windows アプリで正常動作したとは扱わない。** Notepad の確定した目視結果・Clipboard 復元を確認するまで、全受け入れ条件の実機検証は未完了。
+
+## Manual acceptance checklist
+
+1. 既存の Clipboard 内容をコピーして控える（機密ではないテスト文字列を使用）。
+2. 空の Notepad にフォーカスして Caps Lock **単独**を長押し。「このメソッドに null チェックを追加してください」と話して離す。
+3. 認識結果が入力され、Ready に戻ることを確認。
+4. 2 秒以上待って新しい行に手動 Ctrl+V。開始前の Clipboard テスト文字列が戻ることを確認。
+5. 入力途中のキーリピートが二重録音を開始しないことを確認。
+6. 認識中に他アプリへ移動し、入力中止の通知と誤入力がないことを確認。
+7. 設定を閉じてもプロセスが残り、トレイから再表示できることを確認。
+8. 録音中・認識中それぞれで Exit。マイクとキーフックが解放され、以後の貼り付けが起こらないことを確認。
+
+意図的な focus 変更・Clipboard ロック・権限差・アプリ固有形式の追加 smoke は、独立したテスト文書で実施する。
