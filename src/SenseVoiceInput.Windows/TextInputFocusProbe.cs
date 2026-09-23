@@ -14,7 +14,7 @@ public static class TextInputFocusProbe
             if (current.ProcessId == Environment.ProcessId || current.IsPassword || !current.IsEnabled || !current.IsKeyboardFocusable) return new(false, "");
             bool editable = element.TryGetCurrentPattern(ValuePattern.Pattern, out var value)
                 ? !((ValuePattern)value).Current.IsReadOnly
-                : current.ControlType == ControlType.Edit && element.TryGetCurrentPattern(TextPattern.Pattern, out var text) &&
+                : (current.ControlType == ControlType.Edit || current.ControlType == ControlType.Document) && element.TryGetCurrentPattern(TextPattern.Pattern, out var text) &&
                   ((TextPattern)text).DocumentRange.GetAttributeValue(TextPattern.IsReadOnlyAttribute) is false;
             return new(editable, editable ? string.Join(".", element.GetRuntimeId()) : "");
         }

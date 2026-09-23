@@ -39,7 +39,9 @@
                 <CheckBox Content="無音で自動確定" IsChecked="{Binding VadEnabled}" Margin="0,4" />
                 <TextBlock Text="無音判定（200～5000 ms）" />
                 <TextBox Text="{Binding SilenceTimeout, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock Text="自動入力は状態管理まで実装済みです。VAD未接続のため、自動録音・自動認識はまだ動作しません。" TextWrapping="Wrap" Foreground="#8A5300" />
+                <TextBlock Text="Silero VAD モデル（空欄なら音声モデルの親フォルダーの silero_vad.onnx）" TextWrapping="Wrap" />
+                <TextBox Text="{Binding VadModelPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="VAD model path" />
+                <TextBlock Text="AUTO ONで入力欄にフォーカスするとマイクで発話を待ち受け、無音で確定します。認識中はマイクを停止します。最大30秒で区切ります。OFFで停止し、未確定音声を破棄します。" TextWrapping="Wrap" Foreground="#42556D" />
                 <TextBlock Text="認識バックエンド" Margin="0,12,0,6" />
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
                 <TextBlock Text="SenseVoiceSmall モデルフォルダー" />

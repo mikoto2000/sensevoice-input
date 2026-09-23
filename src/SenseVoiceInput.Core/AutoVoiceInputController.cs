@@ -18,10 +18,12 @@ public sealed class AutoVoiceInputController(IVoiceActivityDetector vad, Func<Au
 {
     private bool on, textFocus, suspended, disposed, processing;
     private CancellationTokenSource session = new();
+    private TaskCompletionSource? idle;
     public bool OnlyWhenTextInputFocused { get; set; } = true;
     public bool VadEnabled { get; set; } = true;
     public int SilenceTimeoutMs { get; set; } = 800;
     public bool IsOn => on;
+    public bool IsProcessing => processing;
     public bool IsAvailable => vad.IsAvailable;
     public AutoVoiceState State { get; private set; } = AutoVoiceState.Disabled;
     public event Action<AutoVoiceState>? StateChanged;
@@ -36,14 +38,18 @@ public sealed class AutoVoiceInputController(IVoiceActivityDetector vad, Func<Au
     {
         if (!on || disposed) { SetState(AutoVoiceState.Disabled); return; }
         if (suspended || processing || !VadEnabled || !vad.IsAvailable || OnlyWhenTextInputFocused && !textFocus) { SetState(AutoVoiceState.Ready); return; }
-        vad.Start(SilenceTimeoutMs); SetState(AutoVoiceState.Armed);
+        try { vad.Start(SilenceTimeoutMs); SetState(AutoVoiceState.Armed); }
+        catch (Exception e) { ReportFailure(e); }
     }
+    public void ReportFailure(Exception error) { if (disposed) return; TurnOff(); Failed?.Invoke(error); }
+    public Task StopAsync() { TurnOff(); return idle?.Task ?? Task.CompletedTask; }
     public void SpeechDetected() { if (State == AutoVoiceState.Armed) SetState(AutoVoiceState.Listening); }
     public async Task SilenceDetectedAsync(AudioData audio)
     {
         if (disposed || State != AutoVoiceState.Listening || processing) { Array.Clear(audio.Samples); return; }
         var token = session.Token;
         processing = true;
+        var completion = idle = new(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
             vad.Stop(); SetState(AutoVoiceState.Processing);
@@ -51,7 +57,12 @@ public sealed class AutoVoiceInputController(IVoiceActivityDetector vad, Func<Au
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception e) { Failed?.Invoke(e); }
-        finally { Array.Clear(audio.Samples); processing = false; if (!disposed) Refresh(); }
+        finally
+        {
+            Array.Clear(audio.Samples); processing = false;
+            try { if (!disposed) { Refresh(); StateChanged?.Invoke(State); } }
+            finally { completion.TrySetResult(); }
+        }
     }
     public void Dispose() { if (disposed) return; disposed = true; on = false; session.Cancel(); session.Dispose(); vad.Stop(); SetState(AutoVoiceState.Disabled); }
 }

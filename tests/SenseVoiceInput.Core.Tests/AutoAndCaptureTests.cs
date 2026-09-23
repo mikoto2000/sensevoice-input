@@ -2,6 +2,37 @@ using SenseVoiceInput.Core;
 namespace SenseVoiceInput.Core.Tests;
 public class AutoAndCaptureTests
 {
+    [Fact] public void VadStartFailureTurnsAutoOffAndReports()
+    {
+        using var c = new AutoVoiceInputController(new FailingVad(), (_, _) => Task.CompletedTask);
+        Exception? error = null; c.Failed += e => error = e;
+        c.SetTextFocus(true); c.Toggle();
+        Assert.False(c.IsOn); Assert.Equal(AutoVoiceState.Disabled, c.State); Assert.NotNull(error);
+    }
+    [Fact] public async Task ShutdownWaitsForPendingProcessingAndCancelsIt()
+    {
+        var wait = new TaskCompletionSource(); CancellationToken token = default;
+        using var c = new AutoVoiceInputController(new FakeVad(), async (_, ct) => { token = ct; await wait.Task; });
+        c.SetTextFocus(true); c.Toggle(); c.SpeechDetected();
+        var processing = c.SilenceDetectedAsync(new([1f], 16000));
+        var shutdown = c.StopAsync(); Assert.False(shutdown.IsCompleted); Assert.True(token.IsCancellationRequested);
+        wait.SetResult(); await shutdown; await processing; Assert.Equal(AutoVoiceState.Disabled, c.State);
+    }
+    [Fact] public async Task CancellationCompletionNotifiesThatSettingsCanBeEditedAgain()
+    {
+        var wait = new TaskCompletionSource(); bool idleNotified = false;
+        using var c = new AutoVoiceInputController(new FakeVad(), (_, _) => wait.Task);
+        c.SetTextFocus(true); c.Toggle(); c.SpeechDetected();
+        var processing = c.SilenceDetectedAsync(new([1f], 16000));
+        c.TurnOff(); c.StateChanged += _ => { if (!c.IsProcessing) idleNotified = true; };
+        wait.SetResult(); await processing; Assert.True(idleNotified);
+    }
+    private sealed class FailingVad : IVoiceActivityDetector
+    {
+        public bool IsAvailable => true;
+        public void Start(int silenceTimeoutMs) => throw new IOException("device gone");
+        public void Stop() { }
+    }
     [Fact] public async Task DuplicateSilenceDoesNotRearmDuringProcessing()
     {
         var wait = new TaskCompletionSource();

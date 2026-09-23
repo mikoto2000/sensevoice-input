@@ -1,3 +1,5 @@
+最新の自動録音版は全93件成功・skip0。実Silero VADと自動マイク→PTT切替を確認。ユーザー発話での最終入力は確認待ち。[詳細](automatic-recording.md)。
+
 # Verification record
 
 ## 最新: 任意トリガー版

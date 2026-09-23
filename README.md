@@ -24,6 +24,7 @@ dotnet build
 
 ```powershell
 .\scripts\download-model.ps1
+.\scripts\download-vad-model.ps1
 ```
 
 公式リリースを `models/` に取得し、固定 SHA256 を照合して展開します。アプリはモデルを自動ダウンロードしません。
@@ -38,11 +39,12 @@ dotnet build
 dotnet test
 ```
 
-通常は OS に触れないテストを実行し、実モデルとマイクの 2 件は明示的な opt-in がない場合スキップします。
+通常は OS に触れないテストを実行し、実モデル・VAD・マイクの 4 件は明示的な opt-in がない場合スキップします。
 
 ```powershell
 $env:SENSEVOICE_TEST_MODEL = (Resolve-Path '.\models\sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17').Path
 $env:SENSEVOICE_TEST_MICROPHONE = '1'
+$env:SENSEVOICE_TEST_VAD = (Resolve-Path '.\models\silero_vad.onnx').Path
 dotnet test
 ```
 
@@ -137,7 +139,7 @@ DI はコンストラクター注入で実施し、専用コンテナーを追�
 ## Known limitations
 
 - 単一キー・2～4キーの組み合わせ・2回押し（自動入力切替のみ）に対応。左右のCtrl/Shift/Altを区別。Esc/Windowsキー、Alt+Tab、Ctrl+Alt+Deleteは禁止。
-- 1 回 60 秒まで。常時録音・VAD は未実装。短い無音でもモデルが文字を生成する場合があります。
+- PTTは1回60秒、自動入力は最大30秒ごとに確定します。Silero VADで発話を判定しますが、環境音・テレビ等を発話と判定することがあります。
 - Caps Lockは通常のキーとして扱います。解放イベントが欠けるJIS英数（OEM IMEキー）は非対応。専用の解放推定・Raw Input診断は廃止しました。
 - 録音開始時のウィンドウを記録し、認識終了時にフォーカスが違えば入力を中止。自動で前面へ戻しません。同じウィンドウ内でのキャレット移動・タブ移動までは追跡しません。
 - 直接入力は Unicode キーイベントを受け付けるアプリが対象です。未対応の場合は貼り付け方式を選択してください。SendInput の部分成功はエラー通知し、二重入力を避けるため自動再試行しません。
@@ -146,9 +148,9 @@ DI はコンストラクター注入で実施し、専用コンテナーを追�
 - 管理者権限のアプリ・UAC の安全なデスクトップへの入力は未対応。Ctrl+V 非対応アプリ、独自ショートカット、修飾キー押下中は入力できないことがあります。自動 Enter は送りません。Terminal の Ctrl+V 設定にも依存。
 - ネイティブ推論を途中で強制停止する API はありません。終了要求では推論完了を待って結果を破棄し、入力せず安全に解放します。
 - Windows x64 / CPU のみ。モデルフォルダーは ASCII 文字だけのパスを使用（上流の LPStr 設定 ABI の制約を明示的に検証）。
-- マイク一覧は起動時取得。機器変更後は再起動。自動起動、TSF、IME 化、辞書、LLM 補正、VAD本体、履歴機能は未実装。
+- マイク一覧は起動時取得。機器変更後は再起動。自動起動、TSF、IME 化、辞書、LLM 補正、履歴機能は未実装。
 
-自動音声入力は独立した状態管理とUI Automationによる入力欄判定、VAD接続境界まで実装済みです。現在はVAD未接続のため、ONでもAUTO READYに留まりマイクを開きません。設定保存時・再起動時はAUTO OFFに戻ります。次段階はVADアダプターの実装です。詳細は [トリガー設計と検証](docs/input-triggers.md)。
+自動入力は設定した切替トリガーでON/OFFします。ONで入力欄にフォーカスするとARMEDとなり、マイクで発話待機します。発話後、既定800msの無音で確定して認識・入力します。認識中はマイクを停止するため、その間の次の発話は取得しません。OFF・対象変更・PTT開始で停止し未確定音声を破棄します。設定保存・再起動後はOFFです。VADモデルは既定で音声モデルの親フォルダーの `silero_vad.onnx`、設定画面で変更可能。詳細は [自動録音](docs/automatic-recording.md)。
 
 ## References
 

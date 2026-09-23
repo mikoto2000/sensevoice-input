@@ -30,6 +30,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool OnlyTextInput { get; set; }
     public bool VadEnabled { get; set; }
     public string SilenceTimeout { get; set; }
+    public string VadModelPath { get; set; }
     public string DoubleTapInterval { get; set; } = "350";
     public TriggerType[] PttTypes { get; } = [TriggerType.SINGLE_KEY, TriggerType.KEY_COMBINATION];
     public TriggerType[] AutoTypes { get; } = Enum.GetValues<TriggerType>();
@@ -60,6 +61,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         PttType = pttTrigger.Type; AutoType = autoTrigger.Type;
         OnlyTextInput = settings.AutoVoiceInput.OnlyWhenTextInputFocused; VadEnabled = settings.AutoVoiceInput.Vad.Enabled;
         SilenceTimeout = settings.AutoVoiceInput.Vad.SilenceTimeoutMs.ToString(); DoubleTapInterval = autoTrigger.IntervalMs.ToString();
+        VadModelPath = settings.AutoVoiceInput.Vad.ModelPath;
         void Capture(bool ptt)
         {
             if (!CanEdit) return;
@@ -83,7 +85,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 if (PttType != pttTrigger.Type || AutoType != autoTrigger.Type) throw new ArgumentException("方式を変更したら「キーを設定」で候補を指定してください。");
                 var updated = settings with { MicrophoneDeviceId = MicrophoneDeviceId, Backend = Backend, ModelDirectory = ModelDirectory.Trim(), PasteRestoreDelayMs = delay, TextInputMode = TextInputMode,
                     PushToTalk = new() { Enabled = PttEnabled, Trigger = pttTrigger },
-                    AutoVoiceInput = new() { Enabled = AutoEnabled, ToggleTrigger = autoTrigger with { IntervalMs = interval }, OnlyWhenTextInputFocused = OnlyTextInput, Vad = new() { Enabled = VadEnabled, SilenceTimeoutMs = silence } } };
+                    AutoVoiceInput = new() { Enabled = AutoEnabled, ToggleTrigger = autoTrigger with { IntervalMs = interval }, OnlyWhenTextInputFocused = OnlyTextInput, Vad = new() { Enabled = VadEnabled, SilenceTimeoutMs = silence, ModelPath = VadModelPath.Trim() } } };
                 updated.Validate(); save(updated); Error = ""; Status = "設定を保存しました";
             }
             catch (Exception e) { report(e); }

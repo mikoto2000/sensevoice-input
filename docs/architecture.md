@@ -1,3 +1,5 @@
+更新: VAD本体と自動録音は [automatic-recording.md](automatic-recording.md) で実装済み。以下のVAD未実装に関する記載はトリガー設計時点の履歴です。
+
 # Architecture
 
 ```text

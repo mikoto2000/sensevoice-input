@@ -1,5 +1,5 @@
 namespace SenseVoiceInput.Core;
-public enum DiagnosticEvent { ApplicationStarted, ApplicationStopped, AudioCaptureStarted, AudioCaptureStopped, RecognitionStarted, RecognitionCompleted, TextInjectionStarted, TextInjectionCompleted }
+public enum DiagnosticEvent { ApplicationStarted, ApplicationStopped, AudioCaptureStarted, AudioCaptureStopped, RecognitionStarted, RecognitionCompleted, TextInjectionStarted, TextInjectionCompleted, AutoSpeechStarted, AutoProcessingStarted }
 public sealed class DiagnosticLog(string path)
 {
     private readonly object sync = new();

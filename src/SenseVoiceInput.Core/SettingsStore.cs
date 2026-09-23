@@ -10,6 +10,7 @@ public sealed record PushToTalkSettings
 }
 public sealed record VadSettings
 {
+    public string ModelPath { get; init; } = "";
     public bool Enabled { get; init; } = true;
     public int SilenceTimeoutMs { get; init; } = 800;
 }

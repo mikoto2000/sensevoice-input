@@ -24,10 +24,14 @@ public sealed class ApplicationSession : IDisposable
     private readonly bool openSettings;
     private readonly InputTriggerRouter triggers;
     private readonly AutoVoiceInputController autoVoice;
+    private readonly WasapiVadService vad;
     private readonly System.Windows.Threading.DispatcherTimer focusTimer;
     private bool capturePtt, probing;
     private string focusIdentity = "";
     private nint autoTarget;
+    private string autoFieldIdentity = "";
+    private string VadModelPath => string.IsNullOrWhiteSpace(settings.AutoVoiceInput.Vad.ModelPath)
+        ? Path.GetFullPath(Path.Combine(settings.ModelDirectory, "..", "silero_vad.onnx")) : Path.GetFullPath(settings.AutoVoiceInput.Vad.ModelPath);
     private bool exiting, disposed;
     private InputState previous = InputState.Idle;
     public ApplicationSession(Application app, string[] args)
@@ -47,11 +51,27 @@ public sealed class ApplicationSession : IDisposable
         audio = new(() => settings.MicrophoneDeviceId);
         recognition = new(() => settings.ModelDirectory, () => settings.Backend);
         var injector = new TextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs), () => settings.TextInputMode);
-        autoVoice = new(new UnavailableVoiceActivityDetector(), async (data, ct) =>
+        vad = new(() => settings.MicrophoneDeviceId, () => VadModelPath, action => app.Dispatcher.BeginInvoke(action));
+        autoVoice = new(vad, async (data, ct) =>
         {
+            var target = autoTarget; var identity = autoFieldIdentity;
+            async Task CheckTarget()
+            {
+                ct.ThrowIfCancellationRequested();
+                var focused = await Task.Run(TextInputFocusProbe.Read, ct);
+                ct.ThrowIfCancellationRequested();
+                if (new ForegroundWindowService().GetForegroundWindow() != target ||
+                    settings.AutoVoiceInput.OnlyWhenTextInputFocused && (!focused.Editable || focused.Identity != identity))
+                    throw new InvalidOperationException("入力欄が変わったため自動入力を中止しました。");
+            }
+            await CheckTarget();
             var result = await recognition.RecognizeAsync(data, ct); ct.ThrowIfCancellationRequested();
-            await injector.InjectAsync(result.Text, autoTarget, ct);
+            await CheckTarget();
+            await injector.InjectAsync(result.Text, target, ct);
         }) { OnlyWhenTextInputFocused = settings.AutoVoiceInput.OnlyWhenTextInputFocused, VadEnabled = settings.AutoVoiceInput.Vad.Enabled, SilenceTimeoutMs = settings.AutoVoiceInput.Vad.SilenceTimeoutMs };
+        vad.SpeechStarted += () => autoVoice.SpeechDetected();
+        vad.SegmentReady += async data => await autoVoice.SilenceDetectedAsync(data);
+        vad.Failed += error => autoVoice.ReportFailure(error);
         autoVoice.StateChanged += OnAutoState; autoVoice.Failed += Report;
         coordinator = new(audio, recognition, injector, new ForegroundWindowService());
         coordinator.StateChanged += OnState; coordinator.Failed += Report;
@@ -59,7 +79,7 @@ public sealed class ApplicationSession : IDisposable
         triggers.Triggered += action => app.Dispatcher.BeginInvoke(() => OnTrigger(action));
         triggers.CaptureCompleted += capture => app.Dispatcher.BeginInvoke(() => { viewModel.CompleteCapture(capturePtt, capture); autoVoice.SetSuspended(false); });
         viewModel.CaptureRequested += (ptt, type, interval) => { triggers.BeginCapture(type, interval); capturePtt = ptt; autoVoice.SetSuspended(true); };
-        window.IsVisibleChanged += (_, _) => { if (!window.IsVisible) { triggers.CancelCapture(); autoVoice.SetSuspended(false); } };
+        window.IsVisibleChanged += (_, _) => { if (!window.IsVisible) { triggers.CancelCapture(); autoVoice.SetSuspended(coordinator.State != InputState.Idle); } };
         focusTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
         focusTimer.Tick += ProbeFocus;
         var menu = new Forms.ContextMenuStrip();
@@ -85,7 +105,16 @@ public sealed class ApplicationSession : IDisposable
         if (exiting || triggers.IsCapturing) return;
         try
         {
-            if (action == TriggerAction.AutoVoiceToggle) { if (settings.AutoVoiceInput.Enabled) autoVoice.Toggle(); return; }
+            if (action == TriggerAction.AutoVoiceToggle)
+            {
+                if (settings.AutoVoiceInput.Enabled)
+                {
+                    if (!autoVoice.IsOn && !vad.IsAvailable) throw new FileNotFoundException("Silero VADモデルがありません。設定のモデルパスを確認してください。");
+                    if (!autoVoice.IsOn) autoVoice.SetTextFocus(false);
+                    autoVoice.Toggle();
+                }
+                return;
+            }
             if (!settings.PushToTalk.Enabled) return;
             if (action == TriggerAction.PushToTalkDown) { autoVoice.SetSuspended(true); await coordinator.KeyDownAsync(); }
             else await coordinator.KeyUpAsync();
@@ -95,6 +124,7 @@ public sealed class ApplicationSession : IDisposable
     }
     private void SaveSettings(AppSettings value)
     {
+        if (autoVoice.IsProcessing || coordinator.State != InputState.Idle) throw new InvalidOperationException("音声処理の完了後に保存してください。");
         if (triggers.IsCapturing) throw new InvalidOperationException("キー設定を完了またはキャンセルしてください。");
         triggers.Apply(value);
         try { store.Save(value); } catch { triggers.Apply(settings); throw; }
@@ -106,12 +136,14 @@ public sealed class ApplicationSession : IDisposable
     }
     private void OnAutoState(AutoVoiceState state)
     {
-        if (state == AutoVoiceState.Listening) autoTarget = new ForegroundWindowService().GetForegroundWindow();
+        if (state == AutoVoiceState.Listening) { autoTarget = new ForegroundWindowService().GetForegroundWindow(); autoFieldIdentity = focusIdentity; log.Write(DiagnosticEvent.AutoSpeechStarted); }
+        if (state == AutoVoiceState.Processing) log.Write(DiagnosticEvent.AutoProcessingStarted);
         UpdateStatus();
     }
     private void UpdateStatus()
     {
-        viewModel.AutoStatus = $"AUTO {(autoVoice.IsOn ? autoVoice.State.ToString().ToUpperInvariant() : "OFF")} · VAD未接続（自動録音は未対応）";
+        viewModel.CanEdit = !exiting && coordinator.State == InputState.Idle && !autoVoice.IsProcessing && autoVoice.State != AutoVoiceState.Listening;
+        viewModel.AutoStatus = $"AUTO {(autoVoice.IsOn ? autoVoice.State.ToString().ToUpperInvariant() : "OFF")} · {(vad.IsAvailable ? "Silero VAD" : "VADモデル未配置")}";
         if (coordinator.State == InputState.Idle) viewModel.Status = settings.PushToTalk.Enabled ? "PTT READY · " + settings.PushToTalk.Trigger.Display : "PTT DISABLED";
         tray.Text = $"SenseVoice · PTT {coordinator.State} · AUTO {(autoVoice.IsOn ? autoVoice.State.ToString() : "OFF")}";
     }
@@ -155,7 +187,7 @@ public sealed class ApplicationSession : IDisposable
     {
         if (exiting) return;
         exiting = true; viewModel.CanEdit = false;
-        try { focusTimer.Stop(); autoVoice.TurnOff(); keyboard.Dispose(); await coordinator.DisposeAsync(); }
+        try { focusTimer.Stop(); keyboard.Dispose(); await autoVoice.StopAsync(); await coordinator.DisposeAsync(); }
         catch (Exception e) { Report(e); }
         finally { log.Write(DiagnosticEvent.ApplicationStopped); Dispose(); app.Shutdown(); }
     }
@@ -163,6 +195,6 @@ public sealed class ApplicationSession : IDisposable
     {
         if (disposed) return;
         disposed = true;
-        focusTimer.Stop(); autoVoice.Dispose(); keyboard.Dispose(); audio.Dispose(); recognition.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose();
+        focusTimer.Stop(); autoVoice.Dispose(); vad.Dispose(); keyboard.Dispose(); audio.Dispose(); recognition.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose();
     }
 }

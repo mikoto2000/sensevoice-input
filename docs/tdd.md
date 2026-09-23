@@ -28,3 +28,6 @@ Clipboard の退避失敗後、Unicode fallback の2件を Red（専用例外未
 
 ## 任意トリガーへの設計変更
 旧キー固有テスト16件は仕様廃止により置換。新規35件のRed/Greenと回帰検証は [input-triggers.md](input-triggers.md) に記録。全86件成功。
+
+## 自動録音
+Silero VAD・終了待ち・OFF後の設定操作復帰のRed/Greenと実マイク検証を [automatic-recording.md](automatic-recording.md) に記録。7件追加、全93件成功。
