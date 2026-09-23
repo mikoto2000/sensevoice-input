@@ -21,6 +21,8 @@ public sealed class ApplicationSession : IDisposable
     private readonly GlobalKeyboardService keyboard;
     private readonly Forms.NotifyIcon tray;
     private readonly bool openSettings;
+    private readonly bool keyboardDiagnostics;
+    private int diagnosticEvents;
     private bool exiting, disposed;
     private InputState previous = InputState.Idle;
     public ApplicationSession(Application app, string[] args)
@@ -29,6 +31,7 @@ public sealed class ApplicationSession : IDisposable
         string? Option(string name) { int i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         string directory = Option("--settings-dir") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SenseVoiceInput");
         openSettings = args.Contains("--settings");
+        keyboardDiagnostics = args.Contains("--keyboard-diagnostics");
         store = new(Path.Combine(directory, "settings.json")); log = new(Path.Combine(directory, "diagnostic.log"));
         Exception? initialError = null;
         try { settings = store.Load(); }
@@ -38,9 +41,13 @@ public sealed class ApplicationSession : IDisposable
         window = new() { DataContext = viewModel };
         audio = new(() => settings.MicrophoneDeviceId);
         recognition = new(() => settings.ModelDirectory, () => settings.Backend);
-        coordinator = new(audio, recognition, new ClipboardTextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs)), new ForegroundWindowService());
+        coordinator = new(audio, recognition, new TextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs), () => settings.TextInputMode), new ForegroundWindowService());
         coordinator.StateChanged += OnState; coordinator.Failed += Report;
-        keyboard = new(app.Dispatcher); keyboard.KeyChanged += OnKey;
+        keyboard = new(app.Dispatcher, diagnostic: keyboardDiagnostics ? (message, vk, scan, flags) =>
+        {
+            if (diagnosticEvents++ < 2000) log.KeyboardDiagnostic(message, vk, scan, flags);
+        } : null);
+        keyboard.KeyChanged += OnKey;
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Open Settings", null, (_, _) => OpenSettings());
         menu.Items.Add("Exit", null, async (_, _) => await ExitAsync());
@@ -53,14 +60,15 @@ public sealed class ApplicationSession : IDisposable
         log.Write(DiagnosticEvent.ApplicationStarted);
         try { viewModel.Microphones = AudioCaptureService.GetDevices(); } catch (Exception e) { Report(e); }
         keyboard.Start(); tray.Visible = true;
+        if (keyboardDiagnostics) { viewModel.Status = "キー診断中（録音・入力はしません）"; tray.Text = "SenseVoice Input · Key diagnostics"; }
         if (!File.Exists(Path.Combine(settings.ModelDirectory, "model.int8.onnx")))
             Report(new FileNotFoundException("モデルがありません。設定画面で model.int8.onnx と tokens.txt のフォルダーを指定してください。"));
         if (openSettings) OpenSettings();
-        else tray.ShowBalloonTip(3000, "SenseVoice Input", "Caps Lock を押して話します。設定はトレイをダブルクリック。", Forms.ToolTipIcon.Info);
+        else tray.ShowBalloonTip(3000, "SenseVoice Input", keyboardDiagnostics ? "キー診断中です。録音・文字入力は行いません。" : "Caps Lock を押して話します。設定はトレイをダブルクリック。", Forms.ToolTipIcon.Info);
     }
     private async void OnKey(bool down)
     {
-        if (exiting) return;
+        if (exiting || keyboardDiagnostics) return;
         try { if (down) await coordinator.KeyDownAsync(); else await coordinator.KeyUpAsync(); }
         catch (Exception e) { Report(e); }
     }

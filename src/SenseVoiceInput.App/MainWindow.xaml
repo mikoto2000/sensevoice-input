@@ -27,8 +27,13 @@
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
                 <TextBlock Text="SenseVoiceSmall モデルフォルダー" />
                 <TextBox Text="{Binding ModelDirectory, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Model directory" />
-                <TextBlock Text="クリップボード復元待機時間（500～10000 ms）" />
-                <TextBox Text="{Binding PasteRestoreDelay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Clipboard restore delay" />
+                <TextBlock Text="文字の入力方式" />
+                <ComboBox ItemsSource="{Binding InputModes}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding TextInputMode}" AutomationProperties.Name="Text input mode" />
+                <TextBlock Text="通常は直接入力を使用します。入力できないアプリでは貼り付け方式をお試しください。保存すると次の入力から適用されます。" TextWrapping="Wrap" />
+                <StackPanel IsEnabled="{Binding UsesClipboard}">
+                    <TextBlock Text="クリップボード復元待機時間（500～10000 ms）" />
+                    <TextBox Text="{Binding PasteRestoreDelay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Clipboard restore delay" />
+                </StackPanel>
                 <Button Content="設定を保存" Command="{Binding SaveCommand}" Padding="16,10" HorizontalAlignment="Left" Background="#183E62" Foreground="White" />
             </StackPanel>
             <TextBlock Text="音声認識はこの PC 内で実行します。閉じるとトレイに戻ります。終了はトレイの Exit から。" TextWrapping="Wrap" Foreground="#52657D" Margin="0,20,0,0" />

@@ -20,8 +20,7 @@ internal static class Win32
     [StructLayout(LayoutKind.Sequential)] internal struct MOUSEINPUT { public int X, Y; public uint MouseData, Flags, Time; public nuint Extra; }
     internal static void Paste()
     {
-        if (new[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }.Any(key => (GetAsyncKeyState(key) & 0x8000) != 0))
-            throw new InvalidOperationException("修飾キーを離してから音声入力してください。");
+        EnsureModifiersReleased();
         INPUT Key(ushort key, bool up) => new() { Type = 1, Data = new() { Keyboard = new() { Vk = key, Flags = up ? 2u : 0u } } };
         var inputs = new[] { Key(0x11, false), Key(0x56, false), Key(0x56, true), Key(0x11, true) };
         if (SendInput(4, inputs, Marshal.SizeOf<INPUT>()) != 4)
@@ -30,6 +29,25 @@ internal static class Win32
             SendInput(2, [Key(0x56, true), Key(0x11, true)], Marshal.SizeOf<INPUT>());
             throw new Win32Exception(error, "SendInput failed. Check target integrity level / UIPI.");
         }
+    }
+    internal static void TypeText(string text)
+    {
+        EnsureModifiersReleased();
+        // UTF-16 units include both halves of surrogate pairs, in order. Submit once;
+        // retrying a partial SendInput would duplicate text already delivered.
+        var inputs = new INPUT[checked(text.Length * 2)];
+        for (var i = 0; i < text.Length; i++)
+        {
+            inputs[2 * i] = new() { Type = 1, Data = new() { Keyboard = new() { Scan = text[i], Flags = 4 } } };
+            inputs[2 * i + 1] = new() { Type = 1, Data = new() { Keyboard = new() { Scan = text[i], Flags = 6 } } };
+        }
+        if (SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>()) != inputs.Length)
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Unicode input failed or was partial. Check target integrity level / UIPI.");
+    }
+    private static void EnsureModifiersReleased()
+    {
+        if (new[] { 0x10, 0x11, 0x12, 0x5B, 0x5C }.Any(key => (GetAsyncKeyState(key) & 0x8000) != 0))
+            throw new InvalidOperationException("修飾キーを離してから音声入力してください。");
     }
 }
 public sealed class ForegroundWindowService : IForegroundWindowService

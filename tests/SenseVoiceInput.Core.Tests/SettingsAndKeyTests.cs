@@ -2,11 +2,19 @@ using SenseVoiceInput.Core;
 namespace SenseVoiceInput.Core.Tests;
 public class SettingsAndKeyTests
 {
+    [Fact] public void OldSettingsDefaultToDirectInput()
+    {
+        string path = Path.GetTempFileName();
+        try { File.WriteAllText(path, "{}"); Assert.Equal(TextInputMode.Unicode, new SettingsStore(path).Load().TextInputMode); }
+        finally { File.Delete(path); }
+    }
+    [Fact] public void InvalidInputModeIsRejected() => Assert.Throws<ArgumentOutOfRangeException>(() => new AppSettings { TextInputMode = (TextInputMode)99 }.Validate());
     [Fact] public void KeyGateIgnoresRepeatAndUnmatchedRelease()
     {
-        var gate = new PushToTalkKeyGate();
-        Assert.False(gate.Update(false)); Assert.True(gate.Update(true));
-        Assert.False(gate.Update(true)); Assert.True(gate.Update(false)); Assert.False(gate.Update(false));
+        var gate = new PushToTalkHoldGate();
+        Assert.Empty(gate.Update(false, 0)); Assert.Equal(new[] { true }, gate.Update(true, 1));
+        Assert.Empty(gate.Update(true, 2)); Assert.Empty(gate.Update(false, 3));
+        Assert.True(gate.FlushRelease(53)); Assert.Empty(gate.Update(false, 54));
     }
     [Fact] public void SettingsRoundTripAndDefaults()
     {
@@ -15,7 +23,7 @@ public class SettingsAndKeyTests
         {
             var store = new SettingsStore(Path.Combine(dir, "settings.json"));
             Assert.Equal("CapsLock", store.Load().PushToTalkKey);
-            var settings = new AppSettings { MicrophoneDeviceId = "mic", ModelDirectory = "C:\\models", Backend = RecognitionBackend.CPU };
+            var settings = new AppSettings { MicrophoneDeviceId = "mic", ModelDirectory = "C:\\models", Backend = RecognitionBackend.CPU, TextInputMode = TextInputMode.Clipboard };
             store.Save(settings);
             Assert.Equal(settings, store.Load());
         }

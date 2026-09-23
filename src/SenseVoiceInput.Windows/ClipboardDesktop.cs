@@ -16,7 +16,7 @@ public sealed class ClipboardDesktop(Func<int> restoreDelayMs) : IClipboardDeskt
         foreach (var format in original.GetFormats(false))
         {
             var value = original.GetData(format, false);
-            if (value == null) throw new InvalidOperationException("クリップボードを退避できません。内容を空にして再試行してください。");
+            if (value == null) throw new ClipboardSnapshotUnavailableException();
             if (value is MemoryStream stream) value = new MemoryStream(stream.ToArray());
             snapshot.SetData(format, value, false);
         }
@@ -35,6 +35,11 @@ public sealed class ClipboardDesktop(Func<int> restoreDelayMs) : IClipboardDeskt
     {
         if (!IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わりました。");
         Win32.Paste();
+    }
+    public void TypeText(string text, nint target)
+    {
+        if (!IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わりました。");
+        Win32.TypeText(text);
     }
     public Task SettleAsync() => Task.Delay(Math.Clamp(restoreDelayMs(), 500, 10000));
     public void Restore(object? snapshot)

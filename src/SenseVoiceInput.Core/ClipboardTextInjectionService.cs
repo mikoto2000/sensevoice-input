@@ -1,9 +1,12 @@
 namespace SenseVoiceInput.Core;
+public sealed class ClipboardSnapshotUnavailableException(Exception? inner = null)
+    : Exception("クリップボードの全形式を退避できません。", inner);
 public interface IClipboardDesktop
 {
     bool IsTargetCurrent(nint target);
     uint Sequence { get; }
     object? Snapshot();
+    void TypeText(string text, nint target);
     void SetText(string text);
     void Paste(nint target);
     Task SettleAsync();
