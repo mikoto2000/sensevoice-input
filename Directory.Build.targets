@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'SenseVoiceInput.App'">
-    <Content Include="$(MSBuildThisFileDirectory)README.md;$(MSBuildThisFileDirectory)LICENSE;$(MSBuildThisFileDirectory)THIRD_PARTY_NOTICES.md">
+    <Content Include="$(MSBuildThisFileDirectory)README.md;$(MSBuildThisFileDirectory)DEVELOP.md;$(MSBuildThisFileDirectory)LICENSE;$(MSBuildThisFileDirectory)THIRD_PARTY_NOTICES.md">
       <Link>%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
