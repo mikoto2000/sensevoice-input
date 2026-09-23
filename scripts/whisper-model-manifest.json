@@ -1,0 +1,43 @@
+{
+  "revision": "360ebcde2559d60bb474678be3c1de9ef347d01a",
+  "model": "onnx-community/whisper-large-v3-turbo",
+  "files": [
+    {
+      "sha256": "35cd83669f75bc2867f3b3a4461850392d5e308cd6ea951c3700539883c28df1",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/config.json",
+      "name": "config.json"
+    },
+    {
+      "sha256": "fdf10afca73a0c7bf87286cfb96cf7028a9edbc9bb02512509a526f95b126c9d",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/onnx/decoder_model_merged_fp16.onnx",
+      "name": "decoder_model_merged_fp16.onnx"
+    },
+    {
+      "sha256": "fdadc70836e6b028fd5e580417c312208dad073d2d01e509e2d127c1373399d8",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/onnx/encoder_model_fp16.onnx",
+      "name": "encoder_model_fp16.onnx"
+    },
+    {
+      "sha256": "16f95291d2f47c944d3c2b19390bba7965666555c1ea2a0bdc850d1fab45612f",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/generation_config.json",
+      "name": "generation_config.json"
+    },
+    {
+      "sha256": "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/preprocessor_config.json",
+      "name": "preprocessor_config.json"
+    },
+    {
+      "sha256": "844b642c73a91359722f47b35705f7174686df33d252695d8572cf9ac03a6389",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/tokenizer_config.json",
+      "name": "tokenizer_config.json"
+    },
+    {
+      "sha256": "6d8cbd7cd0d8d5815e478dac67b85a26bbe77c1f5e0c6d76d1ce2abc0e5f21ca",
+      "url": "https://huggingface.co/onnx-community/whisper-large-v3-turbo/resolve/360ebcde2559d60bb474678be3c1de9ef347d01a/tokenizer.json",
+      "name": "tokenizer.json"
+    }
+  ],
+  "license": "MIT (base model)",
+  "licenseSource": "https://huggingface.co/openai/whisper-large-v3-turbo"
+}

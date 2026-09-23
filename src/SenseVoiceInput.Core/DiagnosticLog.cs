@@ -5,7 +5,8 @@ public sealed class DiagnosticLog(string path)
     private readonly object sync = new();
     public Exception? LastWriteError { get; private set; }
     public void Write(DiagnosticEvent value) => Append(value.ToString());
-    public void Error(Exception error) => Append($"Error: {error.GetType().FullName} HResult=0x{error.HResult:X8}\n{error.StackTrace}");
+    public void RecognitionInfo(string metadata) => Append(metadata);
+    public void Error(Exception error) => Append($"Error: {error.GetType().FullName} Code={(error is SpeechRecognitionException asr ? asr.Code.ToString() : "Other")} HResult=0x{error.HResult:X8}\n{error.StackTrace}");
     private void Append(string line)
     {
         lock (sync)

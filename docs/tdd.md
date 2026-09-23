@@ -51,3 +51,7 @@ Windows側はGetGUIThreadInfoで現在の子入力ウィンドウを取得し、
 入力欄フォーカス確認は500msから100msへ短縮。同時問い合わせは引き続き1件まで。マイク起動前や認識処理中の音声は復元できない。AUTO ARMED後の語頭欠けを抑える変更であり、無停止の連続認識ではない。
 
 全102件（Core82/Windows20）成功、skip0。実SenseVoice・Silero・マイクを含む。Release publish成功。ユーザーの実発話での改善度は未確認。
+
+## Whisper ONNX（2026-09-24）
+
+専用ブランチfeature/whisper-onnx-cuda。ASR境界は維持し、モデルI/Oを実ロードで調査後にnative adapterを追加。前処理/decoder、pipeline/tokenizer、service、settingsの順にテストを先行し、未定義型/プロパティで実際にコンパイルRedを確認した後Greenへ。追加のmel参照fixtureと途中cancelは既存実装の回帰テスト。新規18件、全120件成功（実Whisper CUDA/SenseVoice/Silero/マイクを含みskip0）。C#ビルド/Publish成功。数値仕様、テスト範囲、比較結果、制約は [whisper-onnx.md](whisper-onnx.md)。

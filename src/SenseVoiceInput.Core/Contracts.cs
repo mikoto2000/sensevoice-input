@@ -1,7 +1,19 @@
 namespace SenseVoiceInput.Core;
 
 public sealed record AudioData(float[] Samples, int SampleRate);
-public sealed record SpeechRecognitionResult(string Text, string Language);
+public sealed record SpeechRecognitionResult(string Text, string Language)
+{
+    public string Engine { get; init; } = "sensevoice";
+    public string Model { get; init; } = "SenseVoiceSmall";
+    public string Provider { get; init; } = "CPU";
+    public TimeSpan AudioDuration { get; init; }
+    public TimeSpan Duration { get; init; }
+    public TimeSpan PreprocessDuration { get; init; }
+    public TimeSpan EncoderDuration { get; init; }
+    public TimeSpan DecoderDuration { get; init; }
+    public int GeneratedTokens { get; init; }
+    public double RealTimeFactor => AudioDuration.TotalSeconds > 0 ? Duration.TotalSeconds / AudioDuration.TotalSeconds : 0;
+}
 public interface IAudioCaptureService
 {
     Task StartAsync(CancellationToken cancellationToken = default);

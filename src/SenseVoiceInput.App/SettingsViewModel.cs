@@ -9,7 +9,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     private IReadOnlyList<MicrophoneDevice> microphones = [new(null, "Default microphone")];
     public IReadOnlyList<MicrophoneDevice> Microphones { get => microphones; set { microphones = value; Notify(); } }
-    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.Auto, RecognitionBackend.CPU];
+    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.CUDA, RecognitionBackend.CPU, RecognitionBackend.Auto];
+    public RecognitionEngine[] Engines { get; } = Enum.GetValues<RecognitionEngine>();
+    public RecognitionEngine Engine { get; set; }
     public string? MicrophoneDeviceId { get; set; }
     public RecognitionBackend Backend { get; set; }
     public sealed record InputModeOption(TextInputMode Value, string Name);
@@ -54,7 +56,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     }
     public SettingsViewModel(AppSettings settings, Action<AppSettings> save, Action<Exception> report)
     {
-        MicrophoneDeviceId = settings.MicrophoneDeviceId; Backend = settings.Backend;
+        Engine = settings.Engine; MicrophoneDeviceId = settings.MicrophoneDeviceId; Backend = settings.Backend;
         TextInputMode = settings.TextInputMode;
         PttEnabled = settings.PushToTalk.Enabled; AutoEnabled = settings.AutoVoiceInput.Enabled;
         pttTrigger = settings.PushToTalk.Trigger; autoTrigger = settings.AutoVoiceInput.ToggleTrigger;
@@ -83,7 +85,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 if (!int.TryParse(PasteRestoreDelay, out int delay)) throw new ArgumentException("復元待機時間は整数で入力してください。");
                 if (!int.TryParse(SilenceTimeout, out int silence) || !int.TryParse(DoubleTapInterval, out int interval)) throw new ArgumentException("待機時間は整数で入力してください。");
                 if (PttType != pttTrigger.Type || AutoType != autoTrigger.Type) throw new ArgumentException("方式を変更したら「キーを設定」で候補を指定してください。");
-                var updated = settings with { MicrophoneDeviceId = MicrophoneDeviceId, Backend = Backend, ModelDirectory = ModelDirectory.Trim(), PasteRestoreDelayMs = delay, TextInputMode = TextInputMode,
+                var updated = settings with { Engine = Engine, MicrophoneDeviceId = MicrophoneDeviceId, Backend = Backend, ModelDirectory = ModelDirectory.Trim(), PasteRestoreDelayMs = delay, TextInputMode = TextInputMode,
                     PushToTalk = new() { Enabled = PttEnabled, Trigger = pttTrigger },
                     AutoVoiceInput = new() { Enabled = AutoEnabled, ToggleTrigger = autoTrigger with { IntervalMs = interval }, OnlyWhenTextInputFocused = OnlyTextInput, Vad = new() { Enabled = VadEnabled, SilenceTimeoutMs = silence, ModelPath = VadModelPath.Trim() } } };
                 updated.Validate(); save(updated); Error = ""; Status = "設定を保存しました";

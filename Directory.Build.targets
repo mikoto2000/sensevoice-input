@@ -1,0 +1,9 @@
+<Project>
+  <!-- sherpa ships a CPU ORT DLL. Both ASR and Silero must load the same GPU-capable ABI 1.28 DLL. -->
+  <Target Name="UseGpuOnnxRuntime" AfterTargets="CopyFilesToOutputDirectory" Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory).packages/microsoft.ml.onnxruntime.gpu.windows/1.28.0/runtimes/win-x64/native/onnxruntime.dll" DestinationFolder="$(TargetDir)" />
+  </Target>
+  <Target Name="PublishGpuOnnxRuntime" AfterTargets="Publish" Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <Copy SourceFiles="$(MSBuildThisFileDirectory).packages/microsoft.ml.onnxruntime.gpu.windows/1.28.0/runtimes/win-x64/native/onnxruntime.dll" DestinationFolder="$(PublishDir)" />
+  </Target>
+</Project>

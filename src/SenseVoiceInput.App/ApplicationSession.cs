@@ -17,7 +17,7 @@ public sealed class ApplicationSession : IDisposable
     private readonly SettingsViewModel viewModel;
     private readonly MainWindow window;
     private readonly AudioCaptureService audio;
-    private readonly SenseVoiceRecognitionService recognition;
+    private readonly ISpeechRecognitionService recognition;
     private readonly PushToTalkCoordinator coordinator;
     private readonly GlobalKeyboardService keyboard;
     private readonly Forms.NotifyIcon tray;
@@ -45,11 +45,14 @@ public sealed class ApplicationSession : IDisposable
         try { settings = store.Load(); }
         catch (Exception e) { settings = new() { PushToTalk = new() { Enabled = false } }; initialError = e; }
         if (Option("--model-dir") is { } model) settings = settings with { ModelDirectory = Path.GetFullPath(model) };
+        if (Option("--engine") is { } engine) settings = settings with { Engine = Enum.Parse<RecognitionEngine>(engine, true) };
+        if (Option("--backend") is { } backend) settings = settings with { Backend = Enum.Parse<RecognitionBackend>(backend, true) };
+        settings.Validate();
         triggers = new(settings);
         viewModel = new(settings, SaveSettings, Report);
         window = new() { DataContext = viewModel };
         audio = new(() => settings.MicrophoneDeviceId);
-        recognition = new(() => settings.ModelDirectory, () => settings.Backend);
+        recognition = new ConfigurableRecognitionService(() => settings, log.RecognitionInfo);
         var injector = new TextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs), () => settings.TextInputMode);
         vad = new(() => settings.MicrophoneDeviceId, () => VadModelPath, action => app.Dispatcher.BeginInvoke(action));
         autoVoice = new(vad, async (data, ct) =>
@@ -95,7 +98,11 @@ public sealed class ApplicationSession : IDisposable
         log.Write(DiagnosticEvent.ApplicationStarted);
         try { viewModel.Microphones = AudioCaptureService.GetDevices(); } catch (Exception e) { Report(e); }
         keyboard.Start(); tray.Visible = true; focusTimer.Start(); UpdateStatus();
-        if (!File.Exists(Path.Combine(settings.ModelDirectory, "model.int8.onnx")))
+        if (settings.Engine == RecognitionEngine.WhisperOnnx)
+        {
+            try { WhisperModelSessionFactory.CheckFiles(settings.ModelDirectory); } catch (Exception e) { Report(e); }
+        }
+        else if (!File.Exists(Path.Combine(settings.ModelDirectory, "model.int8.onnx")))
             Report(new FileNotFoundException("モデルがありません。設定画面で model.int8.onnx と tokens.txt のフォルダーを指定してください。"));
         if (openSettings || store.Warnings.Count != 0) OpenSettings();
         else tray.ShowBalloonTip(3000, "SenseVoice Input", "設定したトリガーで音声入力。設定はトレイをダブルクリック。", Forms.ToolTipIcon.Info);
@@ -195,6 +202,6 @@ public sealed class ApplicationSession : IDisposable
     {
         if (disposed) return;
         disposed = true;
-        focusTimer.Stop(); autoVoice.Dispose(); vad.Dispose(); keyboard.Dispose(); audio.Dispose(); recognition.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose();
+        focusTimer.Stop(); autoVoice.Dispose(); vad.Dispose(); keyboard.Dispose(); audio.Dispose(); (recognition as IDisposable)?.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose();
     }
 }

@@ -2,6 +2,23 @@
   "version": 1,
   "dependencies": {
     "net10.0-windows7.0": {
+      "MathNet.Numerics": {
+        "type": "Direct",
+        "requested": "[5.0.0, )",
+        "resolved": "5.0.0",
+        "contentHash": "pg1W2VwaEQMAiTpGK840hZgzavnqjlCMTVSbtVCXVyT+7AX4mc1o89SPv4TBlAjhgCOo9c1Y+jZ5m3ti2YgGgA=="
+      },
+      "Microsoft.ML.OnnxRuntime.Gpu": {
+        "type": "Direct",
+        "requested": "[1.28.0, )",
+        "resolved": "1.28.0",
+        "contentHash": "YfP6fDfxXKgycApqBR/m6HFE4wCo1VUR+W4RfbNEVWD1mCrEQ+2ZPyKScdD6hoVYWS1NtvMnQ6y4nMkb+1l28w==",
+        "dependencies": {
+          "Microsoft.ML.OnnxRuntime.Gpu.Linux": "1.28.0",
+          "Microsoft.ML.OnnxRuntime.Gpu.Windows": "1.28.0",
+          "Microsoft.ML.OnnxRuntime.Managed": "1.28.0"
+        }
+      },
       "NAudio": {
         "type": "Direct",
         "requested": "[2.2.1, )",
@@ -31,6 +48,30 @@
           "org.k2fsa.sherpa.onnx.runtime.win-arm64": "1.13.8",
           "org.k2fsa.sherpa.onnx.runtime.win-x64": "1.13.8",
           "org.k2fsa.sherpa.onnx.runtime.win-x86": "1.13.8"
+        }
+      },
+      "Microsoft.ML.OnnxRuntime.Gpu.Linux": {
+        "type": "Transitive",
+        "resolved": "1.28.0",
+        "contentHash": "XCJJb1rr1LYCz1ax1AhST7VFAcJye9nWRqgkxuoguLjB72eaR6ooIK1RatccdZl/c7pqhNT7s9M9QIl97LpYHw==",
+        "dependencies": {
+          "Microsoft.ML.OnnxRuntime.Managed": "1.28.0"
+        }
+      },
+      "Microsoft.ML.OnnxRuntime.Gpu.Windows": {
+        "type": "Transitive",
+        "resolved": "1.28.0",
+        "contentHash": "jGq5uGVjnbwrvzqLd7CqW53GXEzfWJY1cVKeIc/gqmeRDEAQaShQPLrmMi4zMhtIIvmHTErzDVKDWWmibAPgmQ==",
+        "dependencies": {
+          "Microsoft.ML.OnnxRuntime.Managed": "1.28.0"
+        }
+      },
+      "Microsoft.ML.OnnxRuntime.Managed": {
+        "type": "Transitive",
+        "resolved": "1.28.0",
+        "contentHash": "4ecKjwASHhAZXczK/xm5KU6MdvoIGfMd23UAwDbM9vfcfgqZgNqvFWPZPT0Elc1wu5vXWs2Kij1ZBmHCcv1UlA==",
+        "dependencies": {
+          "System.Numerics.Tensors": "9.0.0"
         }
       },
       "NAudio.Asio": {
@@ -122,6 +163,11 @@
         "type": "Transitive",
         "resolved": "1.13.8",
         "contentHash": "QbpkOX0LBcYq/AUZTIlrwz7tPunhqVAFT8A9+JnVw6a6TYRFKvSBwxIWUPbNfpyGYPkTFNunpFIJzcLyiek0gg=="
+      },
+      "System.Numerics.Tensors": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A=="
       },
       "sensevoiceinput.core": {
         "type": "Project"

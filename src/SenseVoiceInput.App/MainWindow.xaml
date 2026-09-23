@@ -42,9 +42,12 @@
                 <TextBlock Text="Silero VAD モデル（空欄なら音声モデルの親フォルダーの silero_vad.onnx）" TextWrapping="Wrap" />
                 <TextBox Text="{Binding VadModelPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="VAD model path" />
                 <TextBlock Text="AUTO ONで入力欄にフォーカスするとマイクで発話を待ち受け、無音で確定します。認識中はマイクを停止します。最大30秒で区切ります。OFFで停止し、未確定音声を破棄します。" TextWrapping="Wrap" Foreground="#42556D" />
-                <TextBlock Text="認識バックエンド" Margin="0,12,0,6" />
+                <TextBlock Text="音声認識エンジン" Margin="0,12,0,6" />
+                <ComboBox ItemsSource="{Binding Engines}" SelectedItem="{Binding Engine}" AutomationProperties.Name="Recognition engine" />
+                <TextBlock Text="WhisperOnnx: large-v3-turbo FP16 / 日本語（ja）/ 文字起こし。CUDA または CPU を選択。SenseVoice の Auto は CPU です。" TextWrapping="Wrap" />
+                <TextBlock Text="Execution Provider" />
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
-                <TextBlock Text="SenseVoiceSmall モデルフォルダー" />
+                <TextBlock Text="選択したエンジンのモデルフォルダー" />
                 <TextBox Text="{Binding ModelDirectory, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Model directory" />
                 <TextBlock Text="文字の入力方式" />
                 <ComboBox ItemsSource="{Binding InputModes}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding TextInputMode}" AutomationProperties.Name="Text input mode" />

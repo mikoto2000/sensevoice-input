@@ -32,15 +32,20 @@ public sealed record AppSettings
     public string? MicrophoneDeviceId { get; init; }
     public PushToTalkSettings PushToTalk { get; init; } = new();
     public AutoVoiceInputSettings AutoVoiceInput { get; init; } = new();
-    public RecognitionBackend Backend { get; init; } = RecognitionBackend.Auto;
-    public string ModelDirectory { get; init; } = Path.Combine(AppContext.BaseDirectory, "models", "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2024-07-17");
+    public RecognitionEngine Engine { get; init; } = RecognitionEngine.WhisperOnnx;
+    public string Language { get; init; } = "ja";
+    public RecognitionBackend Backend { get; init; } = RecognitionBackend.CUDA;
+    public string ModelDirectory { get; init; } = Path.Combine(AppContext.BaseDirectory, "models", "whisper-large-v3-turbo");
     public int PasteRestoreDelayMs { get; init; } = 1500;
     public TextInputMode TextInputMode { get; init; } = TextInputMode.Unicode;
     public void Validate()
     {
         PushToTalk.Validate(); AutoVoiceInput.Validate();
         if (PushToTalk.Enabled && AutoVoiceInput.Enabled && TriggerValidation.Conflicts(PushToTalk.Trigger, AutoVoiceInput.ToggleTrigger)) throw new ArgumentException("PTT と自動入力のトリガーが競合しています。");
-        _ = RecognitionOptions.Provider(Backend);
+        if (!Enum.IsDefined(Engine)) throw new ArgumentOutOfRangeException(nameof(Engine));
+        if (Language != "ja") throw new ArgumentException("言語は日本語（ja）を指定してください。");
+        if (Engine == RecognitionEngine.SenseVoice) _ = RecognitionOptions.Provider(Backend);
+        else if (Backend is not (RecognitionBackend.CPU or RecognitionBackend.CUDA)) throw new ArgumentException("Whisper は CUDA または CPU を選択してください。");
         if (!Enum.IsDefined(TextInputMode)) throw new ArgumentOutOfRangeException(nameof(TextInputMode));
         if (string.IsNullOrWhiteSpace(ModelDirectory)) throw new ArgumentException("Model directory is required.");
         if (PasteRestoreDelayMs is < 500 or > 10000) throw new ArgumentOutOfRangeException(nameof(PasteRestoreDelayMs));
@@ -73,6 +78,12 @@ public sealed class SettingsStore(string path)
             if (root.ContainsKey("pushToTalkKey") && !root.ContainsKey("pushToTalk"))
             { ptt = ptt with { Enabled = false }; Warnings.Add("旧キー設定を無効化しました。Push-to-Talk のキーを設定して有効にしてください。"); }
             root.Remove("pushToTalk"); root.Remove("autoVoiceInput"); root.Remove("pushToTalkKey");
+            if (!root.ContainsKey("engine") && root.ContainsKey("modelDirectory"))
+            {
+                root["engine"] = "SenseVoice";
+                if (!root.ContainsKey("backend")) root["backend"] = "CPU";
+                Warnings.Add("既存の SenseVoice 設定を保持しました。Whisper を使うにはエンジン、モデルフォルダー、CUDA を選択してください。");
+            }
             var settings = root.Deserialize<AppSettings>(Options)! with { PushToTalk = ptt, AutoVoiceInput = auto };
             if (ptt.Enabled && auto.Enabled && TriggerValidation.Conflicts(ptt.Trigger, auto.ToggleTrigger))
             { settings = settings with { AutoVoiceInput = auto with { Enabled = false } }; Warnings.Add("トリガー競合のため自動音声入力だけを無効化しました。"); }
