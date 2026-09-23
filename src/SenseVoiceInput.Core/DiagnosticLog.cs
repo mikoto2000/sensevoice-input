@@ -5,6 +5,7 @@ public sealed class DiagnosticLog(string path)
     private readonly object sync = new();
     public Exception? LastWriteError { get; private set; }
     public void Write(DiagnosticEvent value) => Append(value.ToString());
+    public void KeyboardDiagnostic(int message, int virtualKey, int scanCode, int flags) => Append($"PTT key: message=0x{message:X} vk=0x{virtualKey:X} scan=0x{scanCode:X} flags=0x{flags:X}");
     public void Error(Exception error) => Append($"Error: {error.GetType().FullName} HResult=0x{error.HResult:X8}\n{error.StackTrace}");
     private void Append(string line)
     {

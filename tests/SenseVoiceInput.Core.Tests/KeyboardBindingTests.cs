@@ -15,10 +15,12 @@ public class KeyboardBindingTests
     }
     [Fact] public void JisDownAndDifferentVirtualKeyOnUpFormOnePress()
     {
-        var binding = new PushToTalkKeyBinding(); var gate = new PushToTalkKeyGate();
-        Assert.True(binding.Matches(0xF0, 0x3A, false) && gate.Update(true));
-        Assert.False(gate.Update(true));
-        Assert.True(binding.Matches(0x14, 0x3A, false) && gate.Update(false));
+        var binding = new PushToTalkKeyBinding(); var gate = new PushToTalkHoldGate();
+        Assert.True(binding.Matches(0xF0, 0x3A, false));
+        Assert.Equal(new[] { true }, gate.Update(true, 0));
+        Assert.Empty(gate.Update(true, 10));
+        Assert.True(binding.Matches(0x14, 0x3A, false));
+        Assert.Empty(gate.Update(false, 20)); Assert.True(gate.FlushRelease(70));
     }
     [Fact] public void OtherConfiguredKeysStillUseTheirVirtualKey()
     {
