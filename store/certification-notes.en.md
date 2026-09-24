@@ -23,6 +23,7 @@ CPU is the default. An NVIDIA GPU is not required. Existing saved settings are p
 5. Optionally enable automatic voice input in settings and save, focus an editable field, and use the configured toggle trigger. Speak, then pause for the silence timeout. Toggle it off afterwards. Automatic segments are limited to 30 seconds.
 6. Close the settings window. The app continues in the notification area. Double-click its icon to reopen settings; select Exit from the icon menu to terminate it.
 7. Optional clipboard mode: use non-sensitive clipboard test data, select the paste mode, save, then repeat dictation and check clipboard restoration.
+8. Optional startup: enable the start-at-login checkbox and save. On the next Windows sign-in, the app should start in the notification area. Disable it in Windows Settings > Apps > Startup, reopen the app settings, and confirm the checkbox is disabled with an explanation. Re-enable it in Windows Settings to allow the app to manage it again. Setup problems may open the settings window even during startup.
 
 ## Known functional boundaries
 
@@ -31,6 +32,6 @@ Recognition is Japanese only. Elevated applications, UAC screens and application
 ## Release-owner checklist — do not submit this section
 
 - Verify every step against the uploaded package and record CPU/GPU hardware and timings.
-- Complete the packaged startup-task integration and document how to test it here.
+- Validate the packaged startup-task integration on an installed MSIX, including sign-in and update.
 - Confirm third-party download availability, privacy URL, and support URL.
 - Supply any additional answers Partner Center requests about `runFullTrust` or other declarations.

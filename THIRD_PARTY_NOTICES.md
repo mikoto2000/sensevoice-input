@@ -12,6 +12,8 @@
 | MathNet.Numerics | 5.0.0 | MIT。[全文](licenses/MathNet.Numerics-LICENSE.txt) |
 | Microsoft.ML.OnnxRuntime.Gpu / Gpu.Windows / Managed | 1.28.0 | MIT、Microsoft Corporation。[全文](licenses/ONNXRuntime-LICENSE.txt)、[内包する第三者通知](licenses/ONNXRuntime-ThirdPartyNotices.txt) |
 | System.Numerics.Tensors | 9.0.0 | MIT、.NET Foundation and Contributors。[全文](licenses/System.Numerics.Tensors-LICENSE.txt)、[第三者通知](licenses/System.Numerics.Tensors-ThirdPartyNotices.txt) |
+| Microsoft.Windows.SDK.NET.Ref（Microsoft.Windows.SDK.NET.dll） | 10.0.19041.57 | Windows SDK の条件。[原文](licenses/Windows-SDK-LICENSE.rtf) |
+| C#/WinRT（WinRT.Runtime.dll、上記 targeting pack に含まれる） | 2.2.0.48161 | MIT、Microsoft Corporation。[全文](licenses/CsWinRT-LICENSE.txt) |
 
 NuGet の固定依存は各 `packages.lock.json` に記録しています。GPU メタパッケージは Linux パッケージも復元しますが、公開アプリの対象は Windows x64 です。
 標準の ZIP 配布は framework-dependent です。.NET Desktop Runtime は利用者が別途インストールします。Store 用の自己完結型ビルドは .NET ランタイムを同梱し、ビルド時に使用した runtime pack の LICENSE と第三者通知を `licenses/dotnet/` に収録します。

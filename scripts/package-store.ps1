@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repo = Split-Path $PSScriptRoot -Parent
-$config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+$config = Get-Content -LiteralPath $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
 foreach ($name in @('identityName', 'publisher', 'publisherDisplayName', 'displayName', 'version', 'minWindowsVersion', 'maxWindowsVersionTested')) {
     if (-not $config.PSObject.Properties[$name] -or [string]::IsNullOrWhiteSpace([string]$config.$name)) {
         throw "Fill '$name' in $ConfigPath using the reserved product identity."
@@ -26,7 +26,7 @@ if ([version]$config.minWindowsVersion -lt [version]'10.0.22000.0') { throw 'Thi
 if ([version]$config.maxWindowsVersionTested -lt [version]$config.minWindowsVersion) { throw 'MaxVersionTested is lower than MinVersion.' }
 
 $templatePath = Join-Path $repo 'packaging/msix/AppxManifest.template.xml'
-$manifest = Get-Content -LiteralPath $templatePath -Raw
+$manifest = Get-Content -LiteralPath $templatePath -Raw -Encoding UTF8
 $tokens = @{
     IDENTITY_NAME = $config.identityName; PUBLISHER = $config.publisher; VERSION = $config.version
     DISPLAY_NAME = $config.displayName; PUBLISHER_DISPLAY_NAME = $config.publisherDisplayName
@@ -42,7 +42,7 @@ foreach ($entry in @{ 'StoreLogo.png' = 50; 'Square44x44Logo.png' = 44; 'Square1
     try { if ($asset.Width -ne $entry.Value -or $asset.Height -ne $entry.Value) { throw "Wrong asset dimensions: $($entry.Key)" } }
     finally { $asset.Dispose() }
 }
-Write-Warning 'This builds a testable package, not a submission approval. Complete store/submission-checklist.md, including packaged startup support.'
+Write-Warning 'This builds a testable package, not a submission approval. Complete store/submission-checklist.md, including installed-package startup tests.'
 if ($ValidateOnly) { Write-Host 'Package configuration, XML and base assets validated.'; return }
 
 if (-not $MakeAppxPath) {
@@ -71,7 +71,7 @@ $unexpected = @(Get-ChildItem -LiteralPath $payload -Recurse -File | Where-Objec
 if ($unexpected.Count) { throw 'Unexpected model or NVIDIA binary in standard Store package.' }
 
 # Preserve the notices from the actual runtime packs resolved by this build.
-$runtimeConfig = Get-Content -LiteralPath (Join-Path $payload 'SenseVoiceInput.App.runtimeconfig.json') -Raw | ConvertFrom-Json
+$runtimeConfig = Get-Content -LiteralPath (Join-Path $payload 'SenseVoiceInput.App.runtimeconfig.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $noticePath = Join-Path $payload 'licenses/dotnet'
 [IO.Directory]::CreateDirectory($noticePath) | Out-Null
 foreach ($framework in $runtimeConfig.runtimeOptions.includedFrameworks) {

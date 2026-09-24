@@ -48,7 +48,7 @@ Store 提出用 MSIX は Microsoft が署名します。このスクリプトで
 
 ## 提出前に残っている作業
 
-- `LoginStartupService` のレジストリ Run 登録を、パッケージ版では `windows.startupTask` と連携させる。現 manifest には未動作の自動起動拡張を宣言していない。
+- MSIX の自動起動連携は実装済み。パッケージをインストールした環境で、Windows 側の有効・無効、再ログイン、更新後の動作を確認する（[検証手順](../docs/msix-startup.md)）。
 - .NET 未導入・NVIDIA GPU なしの Windows 11 で、生成 MSIX の初回セットアップと CPU 認識を確認する。
 - MSIX 内からのモデル保存、CUDA DLL 読み込み、グローバルキー、通知領域、クリップボード、更新・削除を確認する。
 - 実画面のスクリーンショットを取得する。`screenshots/README.md` に撮影一覧を用意している。

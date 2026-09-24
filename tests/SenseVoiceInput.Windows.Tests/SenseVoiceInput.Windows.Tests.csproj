@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -25,4 +25,5 @@
   </ItemGroup>
 
   <ItemGroup><EmbeddedResource Include="Fixtures\*.json" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="../../packaging/msix/AppxManifest.template.xml" LogicalName="StartupManifest" /></ItemGroup>
 </Project>

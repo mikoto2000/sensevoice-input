@@ -47,8 +47,8 @@
                 </StackPanel>
             </Border>
             <StackPanel IsEnabled="{Binding CanEdit}">
-                <CheckBox Content="Windows ログイン時に自動起動する" IsChecked="{Binding StartAtLogin}" Margin="0,0,0,8" />
-                <TextBlock Text="保存すると反映されます。ログイン後は通知領域に常駐します。" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,16" />
+                <CheckBox Content="Windows ログイン時に自動起動する" IsChecked="{Binding StartAtLogin}" IsEnabled="{Binding StartupCanChange}" Margin="0,0,0,8" />
+                <TextBlock Text="{Binding StartupMessage}" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,16" />
                 <TextBlock Text="マイク" />
                 <ComboBox ItemsSource="{Binding Microphones}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding MicrophoneDeviceId}" AutomationProperties.Name="Microphone" />
                 <CheckBox Content="Push-to-Talk を有効にする" IsChecked="{Binding PttEnabled}" Margin="0,8" />

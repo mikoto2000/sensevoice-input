@@ -5,9 +5,18 @@ namespace SenseVoiceInput.Windows;
 /// <summary>The per-user Run entry is the source of truth; reading never registers startup.</summary>
 public sealed class LoginStartupService(
     string executablePath,
-    string registryPath = @"Software\Microsoft\Windows\CurrentVersion\Run")
+    string registryPath = @"Software\Microsoft\Windows\CurrentVersion\Run") : ILoginStartupService
 {
     private const string ValueName = "SenseVoiceInput";
+
+    public Task<LoginStartupStatus> GetStatusAsync() => Task.FromResult(new LoginStartupStatus(IsEnabled(), true,
+        "保存すると反映されます。Windows 側で無効にした場合は、設定 → アプリ → スタートアップでも有効にしてください。"));
+
+    public Task SaveAsync(bool enabled, Action saveSettings)
+    {
+        Save(enabled, saveSettings);
+        return Task.CompletedTask;
+    }
 
     public bool IsEnabled()
     {

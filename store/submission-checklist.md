@@ -15,7 +15,8 @@
 
 ## パッケージと実装
 
-- [ ] `LoginStartupService` を MSIX の `StartupTask` と連携。利用者による有効化・無効化、OS 側の無効化、再ログイン、更新後を確認
+- [x] MSIX の `StartupTask` と設定画面を連携。ZIP 版は既存レジストリ方式を維持
+- [ ] インストールした MSIX で、有効化・無効化、OS 側の無効化、再ログイン、更新後を確認
 - [ ] Name / Publisher / DisplayName が予約情報と一致
 - [ ] x64、Windows.Desktop、最小 OS、バージョンを確認。4桁目は 0
 - [ ] `runFullTrust` の用途を審査メモに記載し、提出画面の質問に回答

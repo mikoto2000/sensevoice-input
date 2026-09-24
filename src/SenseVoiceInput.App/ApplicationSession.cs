@@ -12,7 +12,10 @@ public sealed class ApplicationSession : IDisposable
 {
     private readonly Application app;
     private readonly SettingsStore store;
-    private readonly LoginStartupService loginStartup = new(Path.Combine(AppContext.BaseDirectory, "SenseVoiceInput.App.exe"));
+    private readonly ILoginStartupService loginStartup = LoginStartupFactory.Create(Path.Combine(AppContext.BaseDirectory, "SenseVoiceInput.App.exe"));
+    private LoginStartupStatus? startupStatus;
+    private bool refreshingStartup, savingSettings;
+    private TaskCompletionSource? saveCompletion;
     private readonly DiagnosticLog log;
     private AppSettings settings;
     private readonly SettingsViewModel viewModel;
@@ -55,12 +58,11 @@ public sealed class ApplicationSession : IDisposable
         if (Option("--backend") is { } backend) settings = settings with { Backend = Enum.Parse<RecognitionBackend>(backend, true) };
         settings.Validate();
         triggers = new(settings);
-        viewModel = new(settings, SaveSettings, Report) { IsFirstRun = isFirstRun };
-        try { viewModel.StartAtLogin = loginStartup.IsEnabled(); }
-        catch (Exception e) { initialError ??= e; }
+        viewModel = new(settings, SaveSettingsAsync, Report) { IsFirstRun = isFirstRun };
         viewModel.RetryDownloadRequested += BeginModelPreparation;
         viewModel.CancelDownloadRequested += () => downloadCancellation?.Cancel();
         window = new() { DataContext = viewModel };
+        window.Activated += async (_, _) => await RefreshStartupAsync();
         audio = new(() => settings.MicrophoneDeviceId);
         recognition = new ConfigurableRecognitionService(() => settings, log.RecognitionInfo);
         var injector = new TextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs), () => settings.TextInputMode);
@@ -112,6 +114,7 @@ public sealed class ApplicationSession : IDisposable
         log.Write(DiagnosticEvent.ApplicationStarted);
         try { viewModel.Microphones = AudioCaptureService.GetDevices(); } catch (Exception e) { Report(e); }
         keyboard.Start(); tray.Visible = true; focusTimer.Start(); UpdateStatus();
+        _ = RefreshStartupAsync();
         if (viewModel.IsFirstRun)
         {
             OpenSettings();
@@ -120,6 +123,30 @@ public sealed class ApplicationSession : IDisposable
         BeginModelPreparation();
         if (viewModel.IsFirstRun || openSettings || store.Warnings.Count != 0) OpenSettings();
         else tray.ShowBalloonTip(3000, "SenseVoice Input", "設定したトリガーで音声入力。設定はトレイをダブルクリック。", Forms.ToolTipIcon.Info);
+    }
+    private async Task RefreshStartupAsync(bool force = false)
+    {
+        if (disposed || exiting || refreshingStartup || savingSettings && !force) return;
+        refreshingStartup = true;
+        try
+        {
+            var current = await loginStartup.GetStatusAsync();
+            if (disposed || exiting) return;
+            // Preserve an unsaved checkbox edit when Windows has not changed its state.
+            if (force || current != startupStatus) viewModel.StartAtLogin = current.Enabled;
+            startupStatus = current;
+            viewModel.StartupCanChange = current.CanChange;
+            viewModel.StartupMessage = current.Message;
+        }
+        catch (Exception error)
+        {
+            if (disposed || exiting) return;
+            startupStatus = null;
+            viewModel.StartupCanChange = false;
+            viewModel.StartupMessage = "自動起動の状態を確認できません。設定画面を開き直して再試行してください。";
+            log.Error(error);
+        }
+        finally { refreshingStartup = false; }
     }
     private async Task UpdateBackendGuidanceAsync()
     {
@@ -141,7 +168,7 @@ public sealed class ApplicationSession : IDisposable
     }
     private async void OnTrigger(TriggerAction action)
     {
-        if (exiting || !modelsReady || triggers.IsCapturing) return;
+        if (exiting || savingSettings || !modelsReady || triggers.IsCapturing) return;
         try
         {
             if (action == TriggerAction.AutoVoiceToggle)
@@ -161,23 +188,46 @@ public sealed class ApplicationSession : IDisposable
         }
         catch (Exception e) { Report(e); }
     }
-    private void SaveSettings(AppSettings value, bool startAtLogin)
+    private async Task SaveSettingsAsync(AppSettings value, bool startAtLogin)
     {
+        if (exiting || savingSettings) throw new InvalidOperationException("設定の保存中または終了処理中です。");
+        if (refreshingStartup || startupStatus == null) throw new InvalidOperationException("自動起動の状態を確認してから保存してください。設定画面を開き直すと再確認します。");
         if (downloadCancellation != null) throw new InvalidOperationException("準備の完了または中止後に保存してください。");
         if (autoVoice.IsProcessing || coordinator.State != InputState.Idle) throw new InvalidOperationException("音声処理の完了後に保存してください。");
         if (triggers.IsCapturing) throw new InvalidOperationException("キー設定を完了またはキャンセルしてください。");
-        triggers.Apply(value);
-        try { loginStartup.Save(startAtLogin, () => store.Save(value)); } catch { triggers.Apply(settings); throw; }
-        settings = value; autoVoice.TurnOff();
-        autoVoice.OnlyWhenTextInputFocused = value.AutoVoiceInput.OnlyWhenTextInputFocused;
-        autoVoice.VadEnabled = value.AutoVoiceInput.Vad.Enabled;
-        autoVoice.SilenceTimeoutMs = value.AutoVoiceInput.Vad.SilenceTimeoutMs;
+        savingSettings = true;
+        saveCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        autoVoice.TurnOff();
         UpdateStatus();
+        try
+        {
+            triggers.Apply(value);
+            try
+            {
+                await loginStartup.SaveAsync(startAtLogin, () =>
+                {
+                    if (exiting) throw new OperationCanceledException("終了処理のため設定保存を中止しました。");
+                    store.Save(value);
+                });
+            }
+            catch { triggers.Apply(settings); throw; }
+            settings = value;
+            autoVoice.OnlyWhenTextInputFocused = value.AutoVoiceInput.OnlyWhenTextInputFocused;
+            autoVoice.VadEnabled = value.AutoVoiceInput.Vad.Enabled;
+            autoVoice.SilenceTimeoutMs = value.AutoVoiceInput.Vad.SilenceTimeoutMs;
+        }
+        finally
+        {
+            await RefreshStartupAsync(force: true);
+            savingSettings = false;
+            saveCompletion.TrySetResult();
+            if (!disposed) UpdateStatus();
+        }
         BeginModelPreparation();
     }
     private void BeginModelPreparation()
     {
-        if (exiting || disposed || downloadCancellation != null || coordinator.State != InputState.Idle || autoVoice.IsProcessing || triggers.IsCapturing) return;
+        if (exiting || disposed || savingSettings || downloadCancellation != null || coordinator.State != InputState.Idle || autoVoice.IsProcessing || triggers.IsCapturing) return;
         autoVoice.TurnOff();
         downloadTask = PrepareModelsAsync();
     }
@@ -270,7 +320,7 @@ public sealed class ApplicationSession : IDisposable
     }
     private void UpdateStatus()
     {
-        viewModel.CanEdit = !exiting && downloadCancellation == null && coordinator.State == InputState.Idle && !autoVoice.IsProcessing && autoVoice.State != AutoVoiceState.Listening;
+        viewModel.CanEdit = !exiting && !savingSettings && downloadCancellation == null && coordinator.State == InputState.Idle && !autoVoice.IsProcessing && autoVoice.State != AutoVoiceState.Listening;
         viewModel.AutoStatus = $"AUTO {(autoVoice.IsOn ? autoVoice.State.ToString().ToUpperInvariant() : "OFF")} · {(vad.IsAvailable ? "Silero VAD" : "VADモデル未配置")}";
         if (coordinator.State == InputState.Idle) viewModel.Status = settings.PushToTalk.Enabled ? "PTT READY · " + settings.PushToTalk.Trigger.Display : "PTT DISABLED";
         tray.Text = $"SenseVoice · PTT {coordinator.State} · AUTO {(autoVoice.IsOn ? autoVoice.State.ToString() : "OFF")}";
@@ -319,6 +369,7 @@ public sealed class ApplicationSession : IDisposable
     {
         if (exiting) return;
         exiting = true; viewModel.CanEdit = false;
+        if (saveCompletion != null) await saveCompletion.Task;
         downloadCancellation?.Cancel();
         if (downloadTask != null) await downloadTask;
         try { focusTimer.Stop(); keyboard.Dispose(); await autoVoice.StopAsync(); await coordinator.DisposeAsync(); }

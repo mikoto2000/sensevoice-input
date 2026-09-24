@@ -16,6 +16,10 @@ public sealed class CudaRuntimeIntegrationTests
             CudaDriverCheck.Verify();
             string runtime = Assert.IsType<string>(CudaRuntimeProvisioner.FindExisting(AppContext.BaseDirectory));
             CudaRuntimeProvisioner.Activate(runtime);
+            // Provider registration must work without PATH lookup (as in MSIX).
+            Environment.SetEnvironmentVariable("PATH", Environment.GetFolderPath(Environment.SpecialFolder.System));
+            CudaRuntimeProvisioner.Activate(runtime);
+            Environment.SetEnvironmentVariable("PATH", Environment.GetFolderPath(Environment.SpecialFolder.System));
             using var options = new SessionOptions();
             using var cuda = new OrtCUDAProviderOptions();
             cuda.UpdateOptions(new Dictionary<string, string> { ["device_id"] = "0" });
