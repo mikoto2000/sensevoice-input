@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SenseVoiceInput.Core\SenseVoiceInput.Core.csproj" />
+    <InternalsVisibleTo Include="SenseVoiceInput.Windows.Tests" />
   </ItemGroup>
 
   <ItemGroup>
