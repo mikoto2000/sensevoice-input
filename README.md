@@ -104,3 +104,5 @@ Whisper と Silero VAD のライセンスは MIT です。CUDA/cuDNN は MIT の
 標準の配布物にはモデルや NVIDIA DLL を同梱せず、必要に応じて取得します。アプリやモデルを再配布する場合は、対応するライセンス・通知・出典も残してください。
 
 開発者向けの手順は [DEVELOP.md](DEVELOP.md) を参照してください。
+
+Microsoft Store 向けの公開設定・掲載原稿・ポリシー・提出手順は [store/README.md](store/README.md) で管理しています。Store 版は公開準備中です。

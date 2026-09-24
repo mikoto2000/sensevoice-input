@@ -6,3 +6,5 @@ artifacts/
 TestResults/
 *.user
 .vs/
+*.pfx
+*.p12

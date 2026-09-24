@@ -1,0 +1,17 @@
+:root { color-scheme: light; font-family: system-ui, -apple-system, "Yu Gothic UI", sans-serif; color: #233348; background: #f5f7fa; }
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.9; overflow-wrap: anywhere; }
+header, main, footer { max-width: 900px; margin: 0 auto; padding: 28px 36px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 24px; }
+header a { font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+header span, footer { color: #536377; font-size: .9rem; }
+main { background: white; border: 1px solid #e1e7ef; border-radius: 12px; padding-bottom: 48px; }
+h1 { font-size: clamp(1.5rem, 4vw, 2rem); line-height: 1.5; margin: 0 0 24px; color: #172c44; }
+h2 { font-size: 1.2rem; margin-top: 40px; padding-bottom: 8px; border-bottom: 1px solid #e1e7ef; line-height: 1.5; }
+p { margin: 16px 0; }
+a { color: #1558a5; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 3px solid #1558a5; outline-offset: 4px; }
+code { background: #edf2f8; padding: 2px 5px; border-radius: 3px; font-size: .9em; }
+@media (max-width: 600px) { header, main, footer { padding: 22px; } main { border-radius: 0; border-left: 0; border-right: 0; } }
+@media print { body { background: white; } header, footer { display: none; } main { max-width: none; border: 0; } h2 { break-after: avoid; } }

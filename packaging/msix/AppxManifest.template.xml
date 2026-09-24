@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+         IgnorableNamespaces="uap rescap">
+  <Identity Name="{{IDENTITY_NAME}}" Publisher="{{PUBLISHER}}" Version="{{VERSION}}" ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>{{DISPLAY_NAME}}</DisplayName>
+    <PublisherDisplayName>{{PUBLISHER_DISPLAY_NAME}}</PublisherDisplayName>
+    <Description>この PC 内で処理する日本語音声入力</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="{{MIN_WINDOWS_VERSION}}" MaxVersionTested="{{MAX_WINDOWS_VERSION_TESTED}}" />
+  </Dependencies>
+  <Resources><Resource Language="ja-JP" /></Resources>
+  <Applications>
+    <Application Id="App" Executable="SenseVoiceInput.App.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements DisplayName="{{DISPLAY_NAME}}" Description="この PC 内で処理する日本語音声入力"
+                          BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
+                          Square44x44Logo="Assets\Square44x44Logo.png" />
+      <!-- Add windows.startupTask together with the packaged startup service implementation. -->
+    </Application>
+  </Applications>
+  <Capabilities><rescap:Capability Name="runFullTrust" /></Capabilities>
+</Package>

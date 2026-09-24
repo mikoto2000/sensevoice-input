@@ -1,0 +1,17 @@
+{
+  "identityName": "",
+  "publisher": "",
+  "publisherDisplayName": "mikoto2000",
+  "displayName": "SenseVoice Input",
+  "version": "1.0.0.0",
+  "minWindowsVersion": "10.0.22000.0",
+  "maxWindowsVersionTested": "10.0.26200.0",
+  "privacyPolicyUrl": "https://mikoto2000.github.io/sensevoice-input/privacy/",
+  "supportUrl": "",
+  "supportContact": "mikoto2000@gmail.com",
+  "websiteUrl": "",
+  "categorySuggestion": "Productivity",
+  "basePrice": null,
+  "markets": [],
+  "releaseNotes": "日本語音声入力の初回リリース。"
+}
