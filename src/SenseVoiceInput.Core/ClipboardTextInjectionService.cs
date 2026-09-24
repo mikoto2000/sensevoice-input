@@ -4,6 +4,7 @@ public sealed class ClipboardSnapshotUnavailableException(Exception? inner = nul
 public interface IClipboardDesktop
 {
     bool IsTargetCurrent(nint target);
+    IDisposable PreserveIme(nint target);
     void DisableIme(nint target);
     uint Sequence { get; }
     object? Snapshot();
@@ -27,9 +28,10 @@ public sealed class ClipboardTextInjectionService(IClipboardDesktop desktop) : I
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!desktop.IsTargetCurrent(target)) throw new InvalidOperationException("入力先が変わったため貼り付けを中止しました。");
-            desktop.Paste(target);
+            // Even a partial SendInput failure can leave queued paste events.
             // Restoration is deliberately non-cancellable, including on shutdown.
-            await desktop.SettleAsync();
+            try { desktop.Paste(target); }
+            finally { await desktop.SettleAsync(); }
         }
         finally { if (desktop.Sequence == sequence) desktop.Restore(snapshot); }
     }

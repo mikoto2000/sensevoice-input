@@ -27,6 +27,6 @@ PTTは `Idle -> Recording -> Recognizing -> Injecting -> Idle`、空結果なら
 
 終了時は新規トリガーを止め、AUTO/PTTのキャンセル・終了を待ち、認識セッション・マイク・trayを解放する。WhisperのONNX RunはRunOptions.Terminateへキャンセルを伝搬する。モデルロードは中断できず、ロード終了後に破棄。SenseVoice Decodeも完了後に結果を破棄する。
 
-Unicode直接入力が標準でClipboardを読まない。IME OFFを要求してからforegroundを再確認しUTF-16のSendInputを行う。貼り付け方式は明示選択時だけClipboardを退避し、履歴/同期除外形式を付加して貼り付ける。復元はsequence numberが変わらない場合だけ行い、途中の新しいコピーを上書きしない。貼り付け後の復元待ちはキャンセルしない。部分送信を自動再送しない。
+Unicode直接入力が標準でClipboardを読まない。入力直前のIME ON/OFFを保存し、IME OFFを要求してからforegroundを再確認しUTF-16のSendInputを行う。両方式とも入力イベントの処理待ち後、例外・キャンセル時も保存したIME状態の復元を試みる。元の子入力ウィンドウとIMEが有効で同じ欄にフォーカスがある場合だけ復元し、別の欄には適用しない。貼り付け方式は明示選択時だけClipboardを退避し、履歴/同期除外形式を付加して貼り付ける。Clipboardの復元はsequence numberが変わらない場合だけ行い、途中の新しいコピーを上書きしない。入力後の復元待ちはキャンセルしない。部分送信を自動再送しない。
 
 通常ログは状態イベント、ASR数値メタデータ、例外型・分類・HResult・スタックのみ。ASR本文は渡さない。録音・特徴量・cacheの管理バッファは処理後に消去し、native出力はusingで破棄する。OS/ランタイム内の全コピー消去までは保証しない。認識本文を明示的に確認する場合は、実モデルの統合テストの詳細出力を使用する（手順は [DEVELOP.md](../DEVELOP.md)）。
