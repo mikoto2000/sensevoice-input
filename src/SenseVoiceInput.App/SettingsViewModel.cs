@@ -41,6 +41,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool CanEdit { get => canEdit; set { canEdit = value; Notify(); } }
     public ICommand SaveCommand { get; }
     public bool PttEnabled { get; set; }
+    public bool StartAtLogin { get; set; }
     public bool AutoEnabled { get; set; }
     public bool OnlyTextInput { get; set; }
     public bool VadEnabled { get; set; }
@@ -68,7 +69,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         if (ptt) { pttTrigger = candidate; Notify(nameof(PttTriggerDisplay)); }
         else { autoTrigger = candidate; Notify(nameof(AutoTriggerDisplay)); }
     }
-    public SettingsViewModel(AppSettings settings, Action<AppSettings> save, Action<Exception> report)
+    public SettingsViewModel(AppSettings settings, Action<AppSettings, bool> save, Action<Exception> report)
     {
         RetryDownloadCommand = new ActionCommand(() => RetryDownloadRequested?.Invoke());
         CancelDownloadCommand = new ActionCommand(() => CancelDownloadRequested?.Invoke());
@@ -104,7 +105,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 var updated = settings with { Engine = Engine, MicrophoneDeviceId = MicrophoneDeviceId, Backend = Backend, ModelDirectory = ModelDirectory.Trim(), PasteRestoreDelayMs = delay, TextInputMode = TextInputMode,
                     PushToTalk = new() { Enabled = PttEnabled, Trigger = pttTrigger },
                     AutoVoiceInput = new() { Enabled = AutoEnabled, ToggleTrigger = autoTrigger with { IntervalMs = interval }, OnlyWhenTextInputFocused = OnlyTextInput, Vad = new() { Enabled = VadEnabled, SilenceTimeoutMs = silence, ModelPath = VadModelPath.Trim() } } };
-                updated.Validate(); save(updated); Error = ""; Status = "設定を保存しました";
+                updated.Validate(); save(updated, StartAtLogin); Error = ""; Status = "設定を保存しました";
             }
             catch (Exception e) { report(e); }
         });

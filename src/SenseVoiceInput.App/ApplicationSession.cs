@@ -12,6 +12,7 @@ public sealed class ApplicationSession : IDisposable
 {
     private readonly Application app;
     private readonly SettingsStore store;
+    private readonly LoginStartupService loginStartup = new(Path.Combine(AppContext.BaseDirectory, "SenseVoiceInput.App.exe"));
     private readonly DiagnosticLog log;
     private AppSettings settings;
     private readonly SettingsViewModel viewModel;
@@ -54,6 +55,8 @@ public sealed class ApplicationSession : IDisposable
         settings.Validate();
         triggers = new(settings);
         viewModel = new(settings, SaveSettings, Report);
+        try { viewModel.StartAtLogin = loginStartup.IsEnabled(); }
+        catch (Exception e) { initialError ??= e; }
         viewModel.RetryDownloadRequested += BeginModelPreparation;
         viewModel.CancelDownloadRequested += () => downloadCancellation?.Cancel();
         window = new() { DataContext = viewModel };
@@ -134,13 +137,13 @@ public sealed class ApplicationSession : IDisposable
         }
         catch (Exception e) { Report(e); }
     }
-    private void SaveSettings(AppSettings value)
+    private void SaveSettings(AppSettings value, bool startAtLogin)
     {
         if (downloadCancellation != null) throw new InvalidOperationException("準備の完了または中止後に保存してください。");
         if (autoVoice.IsProcessing || coordinator.State != InputState.Idle) throw new InvalidOperationException("音声処理の完了後に保存してください。");
         if (triggers.IsCapturing) throw new InvalidOperationException("キー設定を完了またはキャンセルしてください。");
         triggers.Apply(value);
-        try { store.Save(value); } catch { triggers.Apply(settings); throw; }
+        try { loginStartup.Save(startAtLogin, () => store.Save(value)); } catch { triggers.Apply(settings); throw; }
         settings = value; autoVoice.TurnOff();
         autoVoice.OnlyWhenTextInputFocused = value.AutoVoiceInput.OnlyWhenTextInputFocused;
         autoVoice.VadEnabled = value.AutoVoiceInput.Vad.Enabled;

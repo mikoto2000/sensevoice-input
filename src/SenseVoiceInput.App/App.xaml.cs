@@ -8,7 +8,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         instance = new Mutex(true, "Local\\SenseVoiceInput", out bool first);
-        if (!first) { MessageBox.Show("SenseVoice Input は既に起動しています。トレイアイコンを開いてください。"); Shutdown(); return; }
+        if (!first) { if (!e.Args.Contains("--startup")) MessageBox.Show("SenseVoice Input は既に起動しています。トレイアイコンを開いてください。"); Shutdown(); return; }
         try { session = new ApplicationSession(this, e.Args); session.Start(); }
         catch (Exception error)
         {
