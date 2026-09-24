@@ -34,7 +34,7 @@ public sealed record AppSettings
     public AutoVoiceInputSettings AutoVoiceInput { get; init; } = new();
     public RecognitionEngine Engine { get; init; } = RecognitionEngine.WhisperOnnx;
     public string Language { get; init; } = "ja";
-    public RecognitionBackend Backend { get; init; } = RecognitionBackend.CUDA;
+    public RecognitionBackend Backend { get; init; } = RecognitionBackend.CPU;
     public string ModelDirectory { get; init; } = ModelPaths.Whisper;
     public int PasteRestoreDelayMs { get; init; } = 1500;
     public TextInputMode TextInputMode { get; init; } = TextInputMode.Unicode;

@@ -9,7 +9,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     private IReadOnlyList<MicrophoneDevice> microphones = [new(null, "Default microphone")];
     public IReadOnlyList<MicrophoneDevice> Microphones { get => microphones; set { microphones = value; Notify(); } }
-    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.CUDA, RecognitionBackend.CPU];
+    public RecognitionBackend[] Backends { get; } = [RecognitionBackend.CPU, RecognitionBackend.CUDA];
+    public bool IsFirstRun { get; init; }
+    private string backendGuidance = "CUDA を利用できる GPU・ドライバーを確認しています…";
+    public string BackendGuidance { get => backendGuidance; set { backendGuidance = value; Notify(); } }
     public RecognitionEngine[] Engines { get; } = [RecognitionEngine.WhisperOnnx];
     public RecognitionEngine Engine { get; set; }
     public string? MicrophoneDeviceId { get; set; }

@@ -75,7 +75,7 @@ CUDA 初期化失敗は `CudaUnavailable` として扱い、自動 CPU fallback 
 ```json
 {
   "engine": "WhisperOnnx",
-  "backend": "CUDA",
+  "backend": "CPU",
   "language": "ja",
   "modelDirectory": "C:\\models\\whisper-large-v3-turbo",
   "textInputMode": "Unicode"
@@ -92,7 +92,7 @@ CUDA 初期化失敗は `CudaUnavailable` として扱い、自動 CPU fallback 
 | `--engine WhisperOnnx` | 認識エンジンを指定（公開版は Whisper のみ） |
 | `--backend CPU` / `--backend CUDA` | 実行 backend を起動時に上書き |
 
-`run.ps1` はリポジトリ内の Whisper モデルが存在する場合、そのパスを渡します。設定の相対モデルパスはプロセスの作業ディレクトリ基準です。日本語 / transcribe は固定です。
+`run.ps1` はリポジトリ内の Whisper モデルが存在する場合、そのパスを渡します。`-Backend` を省略すると保存済みの方式を使い、新規設定は CPU になります。初回（設定ファイルがない場合）は設定画面を開き、GPU・ドライバーをバックグラウンドで確認して CPU／CUDA の案内を表示します。GPU が検出されても方式は自動変更しません。設定の相対モデルパスはプロセスの作業ディレクトリ基準です。日本語 / transcribe は固定です。
 
 旧 SenseVoice 設定（`engine` がなく `modelDirectory` がある場合を含む）は、マイク・トリガーを保持して Whisper の標準モデルパスへ移行します。CPU/Auto は CPU、CUDA は CUDA として引き継ぎます。警告を表示し、利用者が保存するまで元ファイルを上書きしません。旧 Caps Lock 専用設定はキーの再設定が必要です。不正なトリガーは対象機能を無効化します。
 

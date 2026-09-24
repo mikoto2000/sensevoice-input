@@ -1,7 +1,8 @@
-param([switch]$Settings, [ValidateSet('WhisperOnnx')][string]$Engine='WhisperOnnx', [ValidateSet('CUDA','CPU')][string]$Backend='CUDA')
+param([switch]$Settings, [ValidateSet('WhisperOnnx')][string]$Engine='WhisperOnnx', [ValidateSet('CUDA','CPU')][string]$Backend)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$arguments = @('run', '--project', (Join-Path $repo 'src\SenseVoiceInput.App'), '--', '--engine', $Engine, '--backend', $Backend)
+$arguments = @('run', '--project', (Join-Path $repo 'src\SenseVoiceInput.App'), '--', '--engine', $Engine)
+if ($PSBoundParameters.ContainsKey('Backend')) { $arguments += @('--backend', $Backend) }
 $localModel = Join-Path $repo 'models\whisper-large-v3-turbo'
 if (Test-Path -LiteralPath $localModel) { $arguments += @('--model-dir', $localModel) }
 if ($Settings) { $arguments += '--settings' }

@@ -2,9 +2,26 @@ using SenseVoiceInput.Core;
 namespace SenseVoiceInput.Core.Tests;
 public class WhisperSettingsTests
 {
-    [Fact] public void NewSettingsPreferWhisperCudaJapanese()
+    [Fact] public void NewSettingsPreferWhisperCpuJapanese()
     {
-        var s=new AppSettings(); Assert.Equal(RecognitionEngine.WhisperOnnx,s.Engine); Assert.Equal(RecognitionBackend.CUDA,s.Backend); Assert.Equal("ja",s.Language); Assert.Contains("whisper-large-v3-turbo",s.ModelDirectory); s.Validate();
+        var s=new AppSettings(); Assert.Equal(RecognitionEngine.WhisperOnnx,s.Engine); Assert.Equal(RecognitionBackend.CPU,s.Backend); Assert.Equal("ja",s.Language); Assert.Contains("whisper-large-v3-turbo",s.ModelDirectory); s.Validate();
+    }
+    [Theory]
+    [InlineData("{}", RecognitionBackend.CPU)]
+    [InlineData("{\"engine\":\"WhisperOnnx\",\"backend\":\"CUDA\"}", RecognitionBackend.CUDA)]
+    [InlineData("{\"engine\":\"WhisperOnnx\",\"backend\":\"CPU\"}", RecognitionBackend.CPU)]
+    public void LoadingSettingsDefaultsToCpuAndPreservesExplicitBackend(string json, RecognitionBackend expected)
+    {
+        string path = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(path, json);
+            var store = new SettingsStore(path);
+            Assert.Equal(expected, store.Load().Backend);
+            Assert.Empty(store.Warnings);
+            Assert.Equal(json, File.ReadAllText(path));
+        }
+        finally { File.Delete(path); }
     }
     [Fact] public void ExistingSenseVoiceConfigurationKeepsDeviceAndTrigger()
     {

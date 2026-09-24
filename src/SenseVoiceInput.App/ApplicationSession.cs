@@ -45,6 +45,7 @@ public sealed class ApplicationSession : IDisposable
         string? Option(string name) { int i = Array.IndexOf(args, name); return i >= 0 && i + 1 < args.Length ? args[i + 1] : null; }
         string directory = Option("--settings-dir") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SenseVoiceInput");
         openSettings = args.Contains("--settings");
+        bool isFirstRun = !File.Exists(Path.Combine(directory, "settings.json"));
         store = new(Path.Combine(directory, "settings.json")); log = new(Path.Combine(directory, "diagnostic.log"));
         Exception? initialError = null;
         try { settings = store.Load(); }
@@ -54,7 +55,7 @@ public sealed class ApplicationSession : IDisposable
         if (Option("--backend") is { } backend) settings = settings with { Backend = Enum.Parse<RecognitionBackend>(backend, true) };
         settings.Validate();
         triggers = new(settings);
-        viewModel = new(settings, SaveSettings, Report);
+        viewModel = new(settings, SaveSettings, Report) { IsFirstRun = isFirstRun };
         try { viewModel.StartAtLogin = loginStartup.IsEnabled(); }
         catch (Exception e) { initialError ??= e; }
         viewModel.RetryDownloadRequested += BeginModelPreparation;
@@ -111,9 +112,32 @@ public sealed class ApplicationSession : IDisposable
         log.Write(DiagnosticEvent.ApplicationStarted);
         try { viewModel.Microphones = AudioCaptureService.GetDevices(); } catch (Exception e) { Report(e); }
         keyboard.Start(); tray.Visible = true; focusTimer.Start(); UpdateStatus();
+        if (viewModel.IsFirstRun)
+        {
+            OpenSettings();
+            _ = UpdateBackendGuidanceAsync();
+        }
         BeginModelPreparation();
-        if (openSettings || store.Warnings.Count != 0) OpenSettings();
+        if (viewModel.IsFirstRun || openSettings || store.Warnings.Count != 0) OpenSettings();
         else tray.ShowBalloonTip(3000, "SenseVoice Input", "設定したトリガーで音声入力。設定はトレイをダブルクリック。", Forms.ToolTipIcon.Info);
+    }
+    private async Task UpdateBackendGuidanceAsync()
+    {
+        string guidance;
+        try
+        {
+            await Task.Run(CudaDriverCheck.Verify);
+            guidance = "CUDA 13 対応の NVIDIA GPU・ドライバーを検出しました。GPU 用ファイルの準備後に CUDA を試せます。利用条件への同意と追加ダウンロードが必要です。実際に使えるかは認識開始時にも確認します。";
+        }
+        catch (SpeechRecognitionException)
+        {
+            guidance = "CUDA 13 対応の NVIDIA GPU・ドライバーを確認できませんでした。CPU をご利用ください。CUDA を使う場合は、対応する NVIDIA GPU とドライバーを準備してください。";
+        }
+        catch (Exception)
+        {
+            guidance = "GPU の確認ができませんでした。CPU で開始できます。CUDA には対応する NVIDIA GPU・ドライバーと GPU 用ファイルが必要です。";
+        }
+        if (!disposed && !exiting) viewModel.BackendGuidance = guidance;
     }
     private async void OnTrigger(TriggerAction action)
     {

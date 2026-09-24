@@ -12,6 +12,20 @@
         <StackPanel Margin="30">
             <TextBlock Text="SenseVoice Input" FontSize="28" FontWeight="SemiBold" Foreground="#172C44" />
             <TextBlock Text="設定したトリガーを押して話し、離すと入力します。" Foreground="#42556D" Margin="0,4,0,24" />
+            <Border Background="#E7F0FA" CornerRadius="8" Padding="18" Margin="0,0,0,20">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers><DataTrigger Binding="{Binding IsFirstRun}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock Text="はじめに：音声認識の方式" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="初期設定は CPU です。GPU がない PC でも利用でき、GPU 用ファイルの取得は不要です。認識に時間がかかる場合があります。" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding BackendGuidance}" TextWrapping="Wrap" />
+                    <TextBlock Text="初回は音声認識モデル（約1.62 GB）を取得します。方式を変更する場合は、準備の完了または中止後に、下の Execution Provider を選んで「設定を保存」を押してください。" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
             <Border Background="White" CornerRadius="8" Padding="18" Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="STATUS" FontSize="11" Foreground="#52657D" />
@@ -58,7 +72,7 @@
                 <TextBlock Text="AUTO ONで入力欄にフォーカスするとマイクで発話を待ち受け、無音で確定します。認識中はマイクを停止します。最大30秒で区切ります。OFFで停止し、未確定音声を破棄します。" TextWrapping="Wrap" Foreground="#42556D" />
                 <TextBlock Text="音声認識エンジン" Margin="0,12,0,6" />
                 <ComboBox ItemsSource="{Binding Engines}" SelectedItem="{Binding Engine}" AutomationProperties.Name="Recognition engine" />
-                <TextBlock Text="WhisperOnnx: large-v3-turbo FP16 / 日本語（ja）/ 文字起こし。CUDA または CPU を選択。SenseVoice の Auto は CPU です。" TextWrapping="Wrap" />
+                <TextBlock Text="WhisperOnnx: large-v3-turbo FP16 / 日本語（ja）/ 文字起こし。CPU（初期設定）または CUDA を選択。CUDA には対応する NVIDIA GPU・ドライバーが必要です。" TextWrapping="Wrap" />
                 <TextBlock Text="Execution Provider" />
                 <ComboBox ItemsSource="{Binding Backends}" SelectedItem="{Binding Backend}" AutomationProperties.Name="Recognition Backend" />
                 <TextBlock Text="選択したエンジンのモデルフォルダー" />
