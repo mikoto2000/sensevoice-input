@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\SenseVoiceInput.Core\SenseVoiceInput.Core.csproj" />
     <ProjectReference Include="..\SenseVoiceInput.Windows\SenseVoiceInput.Windows.csproj" />
   </ItemGroup>
 

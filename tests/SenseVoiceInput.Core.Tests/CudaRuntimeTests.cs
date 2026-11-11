@@ -44,6 +44,6 @@ public sealed class CudaRuntimeTests : IDisposable
         Assert.Equal("new", File.ReadAllText(Path.Combine(destination, "cudart64_13.dll")));
     }
     [Fact] public void IncompleteRuntimeCannotBeActivated() =>
-        Assert.Throws<IOException>(() => CudaRuntimeProvisioner.Activate(root));
+        Assert.Throws<IOException>(() => CudaRuntimeProvisioner.GetLoadPaths(root));
     public void Dispose() { if (Directory.Exists(root)) Directory.Delete(root, true); }
 }

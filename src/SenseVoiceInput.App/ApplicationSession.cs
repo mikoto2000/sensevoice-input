@@ -21,7 +21,7 @@ public sealed class ApplicationSession : IDisposable
     private readonly SettingsViewModel viewModel;
     private readonly MainWindow window;
     private readonly AudioCaptureService audio;
-    private readonly ISpeechRecognitionService recognition;
+    private readonly ConfigurableRecognitionService recognition;
     private readonly PushToTalkCoordinator coordinator;
     private readonly GlobalKeyboardService keyboard;
     private readonly Forms.NotifyIcon tray;
@@ -36,9 +36,10 @@ public sealed class ApplicationSession : IDisposable
     private Task? downloadTask;
     private bool modelsReady;
     private bool previousAutoOn;
-    private string focusIdentity = "";
+    private TextInputFocus? focusedField;
+    private readonly IForegroundWindowService foreground = new ForegroundWindowService();
     private nint autoTarget;
-    private string autoFieldIdentity = "";
+    private string? autoFieldIdentity;
     private string VadModelPath => ModelProvisioner.ResolveVadPath(settings);
     private bool exiting, disposed;
     private InputState previous = InputState.Idle;
@@ -64,31 +65,22 @@ public sealed class ApplicationSession : IDisposable
         window = new() { DataContext = viewModel };
         window.Activated += async (_, _) => await RefreshStartupAsync();
         audio = new(() => settings.MicrophoneDeviceId);
-        recognition = new ConfigurableRecognitionService(() => settings, log.RecognitionInfo);
+        recognition = new(() => (settings.Engine, settings.ModelDirectory, settings.Backend), log.RecognitionInfo);
         var injector = new TextInjectionService(new ClipboardDesktop(() => settings.PasteRestoreDelayMs), () => settings.TextInputMode);
         vad = new(() => settings.MicrophoneDeviceId, () => VadModelPath, action => app.Dispatcher.BeginInvoke(action));
-        autoVoice = new(vad, async (data, ct) =>
+        var autoProcessor = new AutoVoiceInputProcessor(recognition, injector, foreground,
+            ct => Task.Run(TextInputFocusProbe.Read, ct));
+        autoVoice = new(vad, (data, ct) => autoProcessor.ProcessAsync(data, autoTarget, autoFieldIdentity, ct))
         {
-            var target = autoTarget; var identity = autoFieldIdentity;
-            async Task CheckTarget()
-            {
-                ct.ThrowIfCancellationRequested();
-                var focused = await Task.Run(TextInputFocusProbe.Read, ct);
-                ct.ThrowIfCancellationRequested();
-                if (new ForegroundWindowService().GetForegroundWindow() != target ||
-                    settings.AutoVoiceInput.OnlyWhenTextInputFocused && (!focused.Editable || focused.Identity != identity))
-                    throw new InvalidOperationException("入力欄が変わったため自動入力を中止しました。");
-            }
-            await CheckTarget();
-            var result = await recognition.RecognizeAsync(data, ct); ct.ThrowIfCancellationRequested();
-            await CheckTarget();
-            await injector.InjectAsync(result.Text, target, ct);
-        }) { OnlyWhenTextInputFocused = settings.AutoVoiceInput.OnlyWhenTextInputFocused, VadEnabled = settings.AutoVoiceInput.Vad.Enabled, SilenceTimeoutMs = settings.AutoVoiceInput.Vad.SilenceTimeoutMs };
+            OnlyWhenTextInputFocused = settings.AutoVoiceInput.OnlyWhenTextInputFocused,
+            VadEnabled = settings.AutoVoiceInput.Vad.Enabled,
+            SilenceTimeoutMs = settings.AutoVoiceInput.Vad.SilenceTimeoutMs
+        };
         vad.SpeechStarted += () => autoVoice.SpeechDetected();
         vad.SegmentReady += async data => await autoVoice.SilenceDetectedAsync(data);
         vad.Failed += error => autoVoice.ReportFailure(error);
         autoVoice.StateChanged += OnAutoState; autoVoice.Failed += Report;
-        coordinator = new(audio, recognition, injector, new ForegroundWindowService());
+        coordinator = new(audio, recognition, injector, foreground);
         coordinator.StateChanged += OnState; coordinator.Failed += Report;
         keyboard = new(triggers.OnKeyEvent);
         triggers.Triggered += action => app.Dispatcher.BeginInvoke(() => OnTrigger(action));
@@ -271,7 +263,7 @@ public sealed class ApplicationSession : IDisposable
                 string runtime = await Task.Run(() => new CudaRuntimeProvisioner().EnsureAsync(
                     AppContext.BaseDirectory, progress, cancellation.Token), cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
-                CudaRuntimeProvisioner.Activate(runtime);
+                CudaRuntimeLoader.Activate(runtime);
             }
             var prepared = await new ModelProvisioner().EnsureAsync(settings, progress, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
@@ -314,7 +306,12 @@ public sealed class ApplicationSession : IDisposable
                     previousAutoOn ? "自動音声入力をオンにしました。" : "自動音声入力をオフにしました。",
                     Forms.ToolTipIcon.Info);
         }
-        if (state == AutoVoiceState.Listening) { autoTarget = new ForegroundWindowService().GetForegroundWindow(); autoFieldIdentity = focusIdentity; log.Write(DiagnosticEvent.AutoSpeechStarted); }
+        if (state == AutoVoiceState.Listening)
+        {
+            autoTarget = autoVoice.OnlyWhenTextInputFocused ? focusedField?.Window ?? 0 : foreground.GetForegroundWindow();
+            autoFieldIdentity = autoVoice.OnlyWhenTextInputFocused ? focusedField?.Identity : null;
+            log.Write(DiagnosticEvent.AutoSpeechStarted);
+        }
         if (state == AutoVoiceState.Processing) log.Write(DiagnosticEvent.AutoProcessingStarted);
         UpdateStatus();
     }
@@ -337,9 +334,10 @@ public sealed class ApplicationSession : IDisposable
         try
         {
             var focus = await Task.Run(TextInputFocusProbe.Read);
-            if (exiting) return;
-            if (focus.Identity != focusIdentity) autoVoice.SetTextFocus(false);
-            focusIdentity = focus.Identity; autoVoice.SetTextFocus(focus.Editable);
+            if (exiting || !autoVoice.IsOn) return;
+            if (focus != focusedField) autoVoice.SetTextFocus(false);
+            focusedField = focus;
+            autoVoice.SetTextFocus(focus != null);
         }
         catch (Exception error) { autoVoice.SetTextFocus(false); Report(error); }
         finally { probing = false; }
@@ -381,6 +379,6 @@ public sealed class ApplicationSession : IDisposable
         if (disposed) return;
         disposed = true;
         downloadCancellation?.Cancel();
-        focusTimer.Stop(); autoVoice.Dispose(); vad.Dispose(); keyboard.Dispose(); audio.Dispose(); (recognition as IDisposable)?.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose(); trayIcon.Dispose();
+        focusTimer.Stop(); autoVoice.Dispose(); vad.Dispose(); keyboard.Dispose(); audio.Dispose(); recognition.Dispose(); tray.Visible = false; tray.ContextMenuStrip?.Dispose(); tray.Dispose(); trayIcon.Dispose();
     }
 }

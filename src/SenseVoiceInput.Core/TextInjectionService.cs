@@ -5,10 +5,21 @@ public enum TextInputMode { Unicode, Clipboard }
 public sealed class TextInjectionService(IClipboardDesktop desktop, Func<TextInputMode> mode) : ITextInjectionService
 {
     private readonly ClipboardTextInjectionService clipboard = new(desktop);
+    private readonly SemaphoreSlim gate = new(1, 1);
 
     public async Task InjectAsync(string text, nint target, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+
+        // PTT can finish recognition while a cancelled AUTO request is still restoring
+        // clipboard and IME state. Keep the whole desktop operation exclusive.
+        await gate.WaitAsync(cancellationToken);
+        try { await InjectCoreAsync(text, target, cancellationToken); }
+        finally { gate.Release(); }
+    }
+
+    private async Task InjectCoreAsync(string text, nint target, CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
         var inputMode = mode();
         if (!Enum.IsDefined(inputMode)) throw new ArgumentOutOfRangeException(nameof(mode));

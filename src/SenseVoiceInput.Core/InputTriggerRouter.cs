@@ -23,7 +23,14 @@ public sealed class InputTriggerRouter
         if (pressed.Count != 0) throw new InvalidOperationException("キーをすべて離してから設定を開始してください。");
         ptt.Reset(); auto.Reset(); Capture = new(type, intervalMs);
     }
-    public void CancelCapture() { Capture = null; draining = pressed.Count != 0; ptt.Reset(); auto.Reset(); }
+    public void CancelCapture()
+    {
+        if (Capture == null) return;
+        Capture = null;
+        draining = pressed.Count != 0;
+        ptt.Reset();
+        auto.Reset();
+    }
     public bool OnKeyEvent(GlobalKeyEvent e)
     {
         bool down = e.Action == KeyAction.Down;

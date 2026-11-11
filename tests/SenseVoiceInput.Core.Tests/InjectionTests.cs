@@ -94,6 +94,26 @@ public class InjectionTests
         await sut.InjectAsync("paste", 42);
         Assert.Equal(new[] { "ime-save", "ime-off", "direct", "settle", "ime-restore", "ime-save", "ime-off", "snapshot", "set", "paste", "settle", "restore", "ime-restore" }, desktop.Calls);
     }
+    [Fact] public async Task NextInputWaitsForCancelledPasteToRestoreClipboardAndIme()
+    {
+        using var cancellation = new CancellationTokenSource();
+        desktop.CancelOnPaste = cancellation;
+        desktop.SettleCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sut = new TextInjectionService(desktop, () => TextInputMode.Clipboard);
+
+        var first = sut.InjectAsync("auto", 42, cancellation.Token);
+        var second = sut.InjectAsync("ptt", 42);
+
+        Assert.True(cancellation.IsCancellationRequested);
+        Assert.Equal("auto", desktop.Pasted);
+        Assert.Single(desktop.Calls, call => call == "ime-save");
+
+        desktop.SettleCompletion.SetResult();
+        await Task.WhenAll(first, second);
+        Assert.Equal("ptt", desktop.Pasted);
+        Assert.Equal("before", desktop.Content);
+        Assert.True(desktop.ImeOpen);
+    }
     [Fact] public async Task ClipboardModeDoesNotSilentlySwitchMethods()
     {
         desktop.Unreadable = true;
