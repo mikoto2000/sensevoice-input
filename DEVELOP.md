@@ -139,7 +139,7 @@ dotnet test tests/SenseVoiceInput.Windows.Tests -c Release --filter 'FullyQualif
 - PTT は最大60秒の音声を Whisper の30秒窓に分割して処理します。窓境界をまたぐ単語は精度が落ちる可能性があります。
 - FP16 重みを基準とします。INT8/Q4、DirectML/TensorRT は対象外です。CPU では ONNX Runtime 内部で一部の FP16 演算が float32 に変換されます。
 - Silero VAD は ONNX Runtime CPU で直接実行します。指定した v4 モデルの入出力に対応し、別世代のモデルは非対応です。区間検出は発話250ms・語頭保護500ms・既定無音800ms、切り出し最大30秒です。
-- 直接入力は IME の OFF を要求し、その状態を維持します。IMM 互換窓を持たないアプリなどには制約があります。貼り付け方式は完了 ACK を取得できないため、既定1500ms待って復元します。
+- 直接入力と貼り付けはいずれも IME を一時的に OFF にし、処理待ちの後、同じ入力先なら元の状態への復元を試みます。IMM 互換窓を持たないアプリなどには制約があります。貼り付け方式は完了 ACK を取得できないため、既定1500ms待って復元します。
 
 ## 配布ビルドとライセンスの保守
 
@@ -193,7 +193,7 @@ GitHub に公開せず、同じ ZIP 作成をローカルで確認する場合:
 
 ## 設計・過去の検証記録
 
-以下は各実装・検証時点の記録です。削除済みの SenseVoice や sherpa-onnx に関する記載も残っています。現在の開発・配布手順はこの文書を優先してください。
+[設計](docs/architecture.md) は現在のモジュール構成を説明します。その他の検証記録には削除済みの SenseVoice や sherpa-onnx に関する記載も残っています。現在の開発・配布手順はこの文書を優先してください。
 
 - [設計](docs/architecture.md)
 - [Whisper 仕様と実測](docs/whisper-onnx.md)

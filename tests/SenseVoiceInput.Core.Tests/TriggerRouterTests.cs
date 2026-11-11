@@ -20,6 +20,18 @@ public class TriggerRouterTests
         router.OnKeyEvent(new(KeyCode.LEFT_CTRL, KeyAction.Up, 3));
         Assert.Empty(actions); router.Apply(new());
     }
+    [Fact] public void CancellingWhenNotCapturingDoesNotLosePushToTalkRelease()
+    {
+        var router = new InputTriggerRouter(new() { PushToTalk = new() { Trigger = InputTrigger.Single(KeyCode.F12) } });
+        var actions = new List<TriggerAction>();
+        router.Triggered += actions.Add;
+
+        Assert.True(router.OnKeyEvent(new(KeyCode.F12, KeyAction.Down, 0)));
+        router.CancelCapture(); // The settings window can close during ordinary recording.
+        Assert.True(router.OnKeyEvent(new(KeyCode.F12, KeyAction.Up, 1)));
+
+        Assert.Equal(new[] { TriggerAction.PushToTalkDown, TriggerAction.PushToTalkUp }, actions);
+    }
     [Fact] public void CaptureConsumesKeysWithoutFiringAndAppliesNewTrigger()
     {
         var router = new InputTriggerRouter(new()); var actions = new List<TriggerAction>(); router.Triggered += actions.Add;

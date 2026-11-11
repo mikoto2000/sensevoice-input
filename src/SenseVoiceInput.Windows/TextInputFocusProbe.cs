@@ -1,17 +1,19 @@
 using System.Windows.Automation;
+using SenseVoiceInput.Core;
 namespace SenseVoiceInput.Windows;
-public sealed record TextInputFocus(bool Editable, string Identity);
 public static class TextInputFocusProbe
 {
     // Call from a worker thread. Never inspect the field's text/value.
-    public static TextInputFocus Read()
+    public static TextInputFocus? Read()
     {
         try
         {
+            nint window = Win32.GetForegroundWindow();
+            if (window == 0) return null;
             var element = AutomationElement.FocusedElement;
-            if (element == null) return new(false, "");
+            if (element == null) return null;
             var current = element.Current;
-            if (current.ProcessId == Environment.ProcessId || current.IsPassword || !current.IsEnabled || !current.IsKeyboardFocusable) return new(false, "");
+            if (current.ProcessId == Environment.ProcessId || current.IsPassword || !current.IsEnabled || !current.IsKeyboardFocusable) return null;
             bool editable;
             if (element.TryGetCurrentPattern(ValuePattern.Pattern, out var value))
                 editable = !((ValuePattern)value).Current.IsReadOnly;
@@ -19,10 +21,12 @@ public static class TextInputFocusProbe
                 editable = element.TryGetCurrentPattern(TextPattern.Pattern, out var text) &&
                     IsEditableText(current.ControlType, current.ClassName,
                         ((TextPattern)text).DocumentRange.GetAttributeValue(TextPattern.IsReadOnlyAttribute));
-            return new(editable, editable ? string.Join(".", element.GetRuntimeId()) : "");
+            if (!editable) return null;
+            string identity = string.Join(".", element.GetRuntimeId());
+            return Win32.GetForegroundWindow() == window ? new(window, identity) : null;
         }
         catch (Exception e) when (e is ElementNotAvailableException or InvalidOperationException or System.Runtime.InteropServices.COMException or UnauthorizedAccessException)
-        { return new(false, ""); }
+        { return null; }
     }
 
     internal static bool IsEditableText(ControlType type, string className, object readOnly)

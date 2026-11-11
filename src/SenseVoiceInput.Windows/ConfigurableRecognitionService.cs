@@ -1,10 +1,12 @@
 using SenseVoiceInput.Core;
 namespace SenseVoiceInput.Windows;
 /// <summary>Both PTT and AUTO use this single serialized recognizer. Sessions survive across requests.</summary>
-public sealed class ConfigurableRecognitionService(Func<AppSettings> settings, Action<string>? diagnostic = null) : ISpeechRecognitionService, IDisposable
+public sealed class ConfigurableRecognitionService(
+    Func<(RecognitionEngine Engine, string ModelDirectory, RecognitionBackend Backend)> options,
+    Action<string>? diagnostic = null) : ISpeechRecognitionService, IDisposable
 {
     private readonly SemaphoreSlim gate = new(1,1);
-    private ISpeechRecognitionService? current;
+    private WhisperOnnxRecognitionService? current;
     private (RecognitionEngine Engine,string Path,RecognitionBackend Backend)? key;
     private bool disposed;
     public async Task<SpeechRecognitionResult> RecognizeAsync(AudioData audio,CancellationToken cancellationToken=default)
@@ -13,10 +15,10 @@ public sealed class ConfigurableRecognitionService(Func<AppSettings> settings, A
         try
         {
             ObjectDisposedException.ThrowIf(disposed,this);
-            var s=settings(); var next=(s.Engine,System.IO.Path.GetFullPath(s.ModelDirectory),s.Backend);
+            var s=options(); var next=(s.Engine,System.IO.Path.GetFullPath(s.ModelDirectory),s.Backend);
             if(key!=next)
             {
-                (current as IDisposable)?.Dispose(); current=null; key=null;
+                current?.Dispose(); current=null; key=null;
                 current=s.Engine switch
                 {
                     RecognitionEngine.WhisperOnnx=>new WhisperOnnxRecognitionService(next.Item2,s.Backend,diagnostic),
@@ -33,7 +35,7 @@ public sealed class ConfigurableRecognitionService(Func<AppSettings> settings, A
     public void Dispose()
     {
         gate.Wait();
-        try { if(disposed) return; disposed=true; (current as IDisposable)?.Dispose(); current=null; }
+        try { if(disposed) return; disposed=true; current?.Dispose(); current=null; }
         finally { gate.Release(); }
     }
 }
